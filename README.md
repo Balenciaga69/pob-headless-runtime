@@ -1,6 +1,6 @@
-# Path of Building Headless
+# pob-head-less-runtime
 
-`Path of Building Headless` is a headless automation and integration layer for Path of Building. It exposes PoB runtime capabilities through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without a GUI.
+`pob-head-less-runtime` is a headless automation and integration layer for Path of Building. It exposes PoB runtime capabilities through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without a GUI.
 
 ## Requirements
 
@@ -45,46 +45,52 @@ The architecture follows a three-layer model:
 
 ## Key Features
 
-- Load builds from file, XML, PoB share code, or raw payloads
-- Save builds back to XML, share code, or disk
+- Load builds from XML text or PoB share code
 - Query summaries and selected stats
-- Inspect and switch skills
-- Update supported configuration fields
-- Parse, test, compare, simulate, and equip items
-- Snapshot and restore passive trees
+- Compare candidate items against the current build
 - Simulate passive tree deltas and mastery changes
-- Update imported builds from local payloads or remote character data
-- Inspect runtime state and stub capabilities in headless mode
+- Inspect runtime state in headless mode
 
 ## Quick Start
 
 If you want to run the sample bridge locally, use the helper script:
 
 ```powershell
-python .\run_headless.py
+python .\run_headless_demo.py
 ```
 
 If you want to integrate the bridge into another tool, launch `headless_bridge.lua` directly from the PoB environment and pass your own script through the `POB_HEADLESS_SCRIPT` environment variable.
 
 ## Public API Overview
 
-The exported API is centered around a session object created at startup. Common operations include:
+The exported API is centered around a session object created at startup.
 
-- `load_build_file`
+### Stable API v1
+
 - `load_build_xml`
 - `load_build_code`
-- `save_build_xml`
-- `save_build_code`
 - `get_summary`
-- `get_tree`
-- `search_tree_nodes`
-- `parse_item`
-- `test_item`
+- `get_stats(fields)`
 - `compare_item_stats`
 - `simulate_node_delta`
-- `update_imported_build`
+- `get_runtime_status`
+- `health`
 
-If a service is unavailable, the API returns a clear error instead of silently degrading.
+`Stable API v1` is the only contract intended for external automation and future transports.
+
+### Experimental API
+
+The implementation still exposes additional methods for refactoring and local automation, but they are not part of the stable contract and may change without compatibility guarantees. This includes:
+
+- file save/load helpers
+- importer update helpers
+- skill selection APIs
+- config mutation APIs
+- tooltip/equip/simulate-mod item helpers
+- `get_tree`
+- snapshot/restore/search helpers
+
+If a service is unavailable, the API returns a clear error instead of silently degrading. Callers can inspect the declared API tiers through `get_api_surface()`.
 
 ## Typical Use Cases
 
@@ -92,30 +98,22 @@ If a service is unavailable, the API returns a clear error instead of silently d
 
 Load a build, inspect summary stats, and compare before/after changes.
 
-### Item evaluation
+### Stable item evaluation
 
 Parse an item, test it against the current build, and review the resulting stat delta before equipping it.
 
-### Passive tree simulation
+### Stable passive tree simulation
 
 Snapshot the current tree, simulate node changes, and restore the previous state after inspection.
-
-### Import automation
-
-Update a build from offline payloads or remote character data while preserving skill selection and runtime consistency.
 
 ## Testing Strategy
 
 The project uses both smoke tests and unit tests to protect the API surface and runtime behavior.
 
-Smoke tests focus on end-to-end workflows such as:
+Smoke tests are split into two suites:
 
-- API contract coverage
-- item comparison and tooltip rendering
-- passive tree simulation
-- config comparison
-- importer updates
-- skill selection restore behavior
+- `stable` for the supported contract surface
+- `experimental` for opt-in behavior that depends more heavily on PoB internals
 
 Unit tests focus on:
 
@@ -129,10 +127,10 @@ Unit tests focus on:
 ## Repository Layout
 
 - `headless_bridge.lua` - runtime bootstrap and session startup
-- `run_headless.py` - convenience launcher for local smoke runs
+- `run_headless_demo.py` - convenience launcher for local smoke runs
 - `src` - implementation code
 - `tests` - smoke tests and unit tests
-- `markdown` - documentation and design notes
+- `tips` - notes and design drafts
 
 ## Status
 

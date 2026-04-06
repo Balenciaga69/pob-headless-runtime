@@ -39,3 +39,7 @@ luac.out
 *.x86_64
 *.hex
 
+# Custom
+**/repomix.script.ps1
+**/manual-scripts
+tips

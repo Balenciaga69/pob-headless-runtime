@@ -1,7 +1,7 @@
 local api = PoBHeadless
 local testkit = require("testkit")
 
-local fixtureRoot = GetUserPath() .. "/custom/pob_headless_refactor/tests/fixtures"
+local fixtureRoot = GetUserPath() .. "/custom/pob-headless-runtime/tests/fixtures"
 local xmlPath = fixtureRoot .. "/mirage_example_xml.xml"
 local codePath = fixtureRoot .. "/mirage_exmple_code.txt"
 

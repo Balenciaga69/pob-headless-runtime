@@ -1,4 +1,4 @@
-"""Run all headless smoke tests in custom/pob_headless_refactor/tests/smoke."""
+"""Run headless smoke tests in custom/pob-headless-runtime/tests/smoke."""
 
 from __future__ import annotations
 
@@ -12,10 +12,29 @@ from pathlib import Path
 
 TEST_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = TEST_ROOT.parent.parent.parent
-POB_LUA_PATH = REPO_ROOT / "custom" / "pob_headless_refactor" / "headless_bridge.lua"
-DEFAULT_FIXTURE = REPO_ROOT / "custom" / "pob_headless_refactor" / "tests" / "fixtures" / "mirage_example_xml.xml"
+POB_LUA_PATH = REPO_ROOT / "custom" / "pob-headless-runtime" / "headless_bridge.lua"
+DEFAULT_FIXTURE = REPO_ROOT / "custom" / "pob-headless-runtime" / "tests" / "fixtures" / "mirage_example_xml.xml"
 DEFAULT_RUNTIME_DIR = REPO_ROOT / "runtime"
 SMOKE_DIR = TEST_ROOT / "smoke"
+
+SUITES: dict[str, tuple[str, ...]] = {
+    "stable": (
+        "smoke_build_code.lua",
+        "smoke_contract_regression.lua",
+        "smoke_item_compare.lua",
+        "smoke_min_api.lua",
+        "smoke_stats_compare.lua",
+        "smoke_tree_simulation.lua",
+    ),
+    "experimental": (
+        "smoke_config_compare_stats.lua",
+        "smoke_importer_update.lua",
+        "smoke_item_slot_rules.lua",
+        "smoke_item_tooltip.lua",
+        "smoke_simulate_mod.lua",
+        "smoke_skills_config.lua",
+    ),
+}
 
 
 @dataclass
@@ -35,6 +54,13 @@ def _build_env(script_path: Path) -> dict[str, str]:
 
 def _list_smoke_scripts() -> list[Path]:
     return sorted(SMOKE_DIR.glob("*.lua"))
+
+
+def _list_suite_scripts(suite: str) -> list[Path]:
+    if suite == "all":
+        return _list_smoke_scripts()
+    names = SUITES[suite]
+    return [SMOKE_DIR / name for name in names]
 
 
 def _run_script(script_path: Path, fixture: Path) -> SmokeResult:
@@ -73,6 +99,12 @@ def main() -> int:
         type=Path,
         help="Run only the specified smoke script(s). Can be passed multiple times.",
     )
+    parser.add_argument(
+        "--suite",
+        choices=("stable", "experimental", "all"),
+        default="stable",
+        help="Run a named smoke suite.",
+    )
     args = parser.parse_args()
 
     fixture = args.fixture.resolve()
@@ -80,7 +112,7 @@ def main() -> int:
         print(f"Fixture not found: {fixture}", file=sys.stderr)
         return 1
 
-    scripts = args.script if args.script else _list_smoke_scripts()
+    scripts = args.script if args.script else _list_suite_scripts(args.suite)
     if not scripts:
         print(f"No smoke scripts found in {SMOKE_DIR}", file=sys.stderr)
         return 1

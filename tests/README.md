@@ -1,8 +1,6 @@
-# pob_headless_refactor tests
+# pob-headless-runtime tests
 
 This folder collects test-related scripts for the headless PoB bridge.
-
-Planned layout:
 
 - `helpers/` for reusable helper scripts used by smoke or integration runs
 - `smoke/` for executable smoke tests against known fixtures
@@ -11,17 +9,20 @@ Planned layout:
 - `run_smoke.py` for batch-running all smoke scripts
 - `run_unit.py` for batch-running isolated unit scripts
 
-The current smoke entry points were moved here from `custom/pob_headless_refactor/` so
-test code lives in one place instead of being mixed with runtime bridge code.
+Smoke suites:
+
+- `stable` for the supported contract surface
+- `experimental` for opt-in behavior that may change
+- `all` for local full regression runs
 
 Run smoke tests with:
 
 ```powershell
-python custom\pob_headless_refactor\tests\run_smoke.py
+python custom\pob-headless-runtime\tests\run_smoke.py --suite stable
 ```
 
 Run unit tests with:
 
 ```powershell
-python custom\pob_headless_refactor\tests\run_unit.py
+python custom\pob-headless-runtime\tests\run_unit.py
 ```
