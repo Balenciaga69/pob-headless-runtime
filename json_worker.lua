@@ -33,6 +33,7 @@ end
 
 local context = require("entry.context").fromArg0(argv[0])
 local bootstrap = require("entry.bootstrap")
+local transportError = require("transport.error")
 
 local function stderrPrint(...)
 	local parts = {}
@@ -50,15 +51,12 @@ local transport = require("transport.json_stdio")
 local request, requestErr = transport.readRequest()
 
 if not request then
-	local payload = transport.encodeResponse({
-		id = nil,
-		ok = false,
-		error = {
-			code = "INVALID_INPUT",
-			message = tostring(requestErr or "invalid request"),
-			retryable = false,
-		},
-	})
+	local payload = transport.encodeResponse(transportError.response(
+		nil,
+		requestErr.code,
+		requestErr.message,
+		requestErr.retryable
+	))
 	io.write(payload)
 	os.exit(1)
 end
@@ -74,15 +72,12 @@ local _, settleErr = session:runUntilSettled({
 })
 
 if settleErr then
-	local payload = transport.encodeResponse({
-		id = request.id,
-		ok = false,
-		error = {
-			code = "TIMEOUT",
-			message = settleErr,
-			retryable = true,
-		},
-	})
+	local payload = transport.encodeResponse(transportError.response(
+		request.id,
+		transportError.codes.TIMEOUT,
+		settleErr,
+		true
+	))
 	io.write(payload)
 	os.exit(1)
 end

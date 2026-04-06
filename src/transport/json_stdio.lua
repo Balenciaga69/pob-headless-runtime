@@ -1,4 +1,5 @@
 local json = require("dkjson")
+local transportError = require("transport.error")
 
 local M = {}
 
@@ -14,6 +15,7 @@ local DEFAULT_STABLE_METHODS = {
 }
 
 local function getStableMethods(api)
+	-- Prefer the API-declared surface; fall back to the hard-coded stable list for tests.
 	local stable = {}
 	if type(api) == "table" and type(api.get_api_surface) == "function" then
 		local surface = api.get_api_surface()
@@ -30,39 +32,6 @@ local function getStableMethods(api)
 	return stable
 end
 
-local function classifyError(message)
-	local text = tostring(message or "unknown error")
-	if text:match("unsupported method") or text:match("invalid request") or text:match(" is required") then
-		return "INVALID_INPUT", false
-	end
-	if text:match("experimental") then
-		return "EXPERIMENTAL_API", false
-	end
-	if text:match("unsupported config field") then
-		return "UNSUPPORTED_FIELD", false
-	end
-	if text:match("timed out") or text:match("did not settle within") then
-		return "TIMEOUT", true
-	end
-	if text:match("build not initialized") or text:match("build/config not initialized") or text:match("items not initialized") then
-		return "BUILD_NOT_READY", true
-	end
-	return "UPSTREAM_FAILURE", false
-end
-
-local function buildError(id, message)
-	local code, retryable = classifyError(message)
-	return {
-		id = id,
-		ok = false,
-		error = {
-			code = code,
-			message = tostring(message or "unknown error"),
-			retryable = retryable,
-		},
-	}
-end
-
 local function buildSuccess(id, result)
 	return {
 		id = id,
@@ -72,39 +41,82 @@ local function buildSuccess(id, result)
 end
 
 local function normalizeParams(request)
+	-- Transport params are always modeled as a JSON object.
 	if request.params == nil then
 		return {}
 	end
 	if type(request.params) ~= "table" then
-		return nil, "invalid request: params must be an object"
+		return nil, transportError.new(
+			transportError.codes.INVALID_PARAMS,
+			"invalid params: params must be an object"
+		)
 	end
 	return request.params
 end
 
-local function assertRequestShape(request, api)
+local function assertRequestEnvelope(request)
 	if type(request) ~= "table" then
-		return nil, "invalid request: expected JSON object"
+		return nil, transportError.new(
+			transportError.codes.INVALID_REQUEST,
+			"invalid request: expected JSON object"
+		)
 	end
 	if type(request.method) ~= "string" or request.method == "" then
-		return nil, "invalid request: method is required"
-	end
-	if not getStableMethods(api)[request.method] then
-		return nil, "unsupported method: " .. tostring(request.method) .. " (experimental or unknown)"
+		return nil, transportError.new(
+			transportError.codes.INVALID_REQUEST,
+			"invalid request: method is required"
+		)
 	end
 	return request
 end
 
+local function assertRequestShape(request, api)
+	local validRequest, err = assertRequestEnvelope(request)
+	if not validRequest then
+		return nil, err
+	end
+	if not getStableMethods(api)[request.method] then
+		local surface = type(api) == "table" and type(api.get_api_surface) == "function" and api.get_api_surface() or nil
+		local experimental = {}
+		for _, name in ipairs((surface and surface.experimental) or {}) do
+			experimental[name] = true
+		end
+		local code = experimental[request.method] and transportError.codes.EXPERIMENTAL_API or transportError.codes.METHOD_NOT_FOUND
+		local suffix = experimental[request.method] and " (experimental)" or ""
+		return nil, transportError.new(code, "unsupported method: " .. tostring(request.method) .. suffix)
+	end
+	return validRequest
+end
+
+local function requireNonEmptyString(params, key, alias)
+	-- Reuse one validator so missing required string params produce one stable code/message shape.
+	local value = params[key]
+	if type(value) == "string" and value ~= "" then
+		return value
+	end
+	return nil, transportError.new(
+		transportError.codes.INVALID_PARAMS,
+		tostring(alias or key) .. " is required"
+	)
+end
+
 function M.decodeRequest(input)
 	if type(input) ~= "string" or input == "" then
-		return nil, "invalid request: request body is empty"
+		return nil, transportError.new(
+			transportError.codes.INVALID_REQUEST,
+			"invalid request: request body is empty"
+		)
 	end
 
 	local request, _, err = json.decode(input)
 	if err then
-		return nil, "invalid request: " .. tostring(err)
+		return nil, transportError.new(
+			transportError.codes.INVALID_REQUEST,
+			"invalid request: " .. tostring(err)
+		)
 	end
 
-	return assertRequestShape(request)
+	return assertRequestEnvelope(request)
 end
 
 function M.encodeResponse(response)
@@ -119,6 +131,7 @@ function M.readRequest(reader)
 end
 
 local function preloadBuild(api, method, params)
+	-- Stateless worker calls can inline a build payload in params before the main method runs.
 	if method == "load_build_xml" or method == "load_build_code" then
 		return true
 	end
@@ -126,7 +139,7 @@ local function preloadBuild(api, method, params)
 	if type(params.build_xml) == "string" and params.build_xml ~= "" then
 		local _, err = api.load_build_xml(params.build_xml, params.build_name)
 		if err then
-			return nil, err
+			return nil, transportError.fromUpstream(nil, err).error
 		end
 		return true
 	end
@@ -134,7 +147,7 @@ local function preloadBuild(api, method, params)
 	if type(params.build_code) == "string" and params.build_code ~= "" then
 		local _, err = api.load_build_code(params.build_code, params.build_name)
 		if err then
-			return nil, err
+			return nil, transportError.fromUpstream(nil, err).error
 		end
 		return true
 	end
@@ -143,15 +156,22 @@ local function preloadBuild(api, method, params)
 end
 
 local function dispatchStableMethod(api, method, params)
+	-- Dispatch only the formal stable methods exposed by the transport contract.
 	if method == "load_build_xml" then
-		local xmlText = params.xmlText or params.build_xml
+		local xmlText, paramErr = requireNonEmptyString(params, "xmlText", "xmlText or build_xml")
+		if not xmlText then
+			xmlText, paramErr = requireNonEmptyString(params, "build_xml", "xmlText or build_xml")
+		end
+		if not xmlText then
+			return nil, paramErr
+		end
 		local loaded, err = api.load_build_xml(xmlText, params.name or params.build_name)
 		if not loaded then
-			return nil, err
+			return nil, transportError.fromUpstream(nil, err).error
 		end
 		local summary, summaryErr = api.get_summary()
 		if not summary then
-			return nil, summaryErr
+			return nil, transportError.fromUpstream(nil, summaryErr).error
 		end
 		return {
 			loaded = true,
@@ -160,14 +180,20 @@ local function dispatchStableMethod(api, method, params)
 	end
 
 	if method == "load_build_code" then
-		local code = params.code or params.build_code
+		local code, paramErr = requireNonEmptyString(params, "code", "code or build_code")
+		if not code then
+			code, paramErr = requireNonEmptyString(params, "build_code", "code or build_code")
+		end
+		if not code then
+			return nil, paramErr
+		end
 		local loaded, err = api.load_build_code(code, params.name or params.build_name)
 		if not loaded then
-			return nil, err
+			return nil, transportError.fromUpstream(nil, err).error
 		end
 		local summary, summaryErr = api.get_summary()
 		if not summary then
-			return nil, summaryErr
+			return nil, transportError.fromUpstream(nil, summaryErr).error
 		end
 		return {
 			loaded = true,
@@ -176,16 +202,34 @@ local function dispatchStableMethod(api, method, params)
 	end
 
 	if method == "get_summary" then
-		return api.get_summary()
+		local result, err = api.get_summary()
+		if not result then
+			return nil, transportError.fromUpstream(nil, err).error
+		end
+		return result
 	end
 
 	if method == "get_stats" then
-		return api.get_stats(params.fields)
+		local result, err = api.get_stats(params.fields)
+		if not result then
+			return nil, transportError.fromUpstream(nil, err).error
+		end
+		return result
 	end
 
 	if method == "compare_item_stats" then
-		local itemText = params.item_text or params.itemText
-		return api.compare_item_stats(itemText, params.slot, params.fields)
+		local itemText, paramErr = requireNonEmptyString(params, "item_text", "item_text or itemText")
+		if not itemText then
+			itemText, paramErr = requireNonEmptyString(params, "itemText", "item_text or itemText")
+		end
+		if not itemText then
+			return nil, paramErr
+		end
+		local result, err = api.compare_item_stats(itemText, params.slot, params.fields)
+		if not result then
+			return nil, transportError.fromUpstream(nil, err).error
+		end
+		return result
 	end
 
 	if method == "simulate_node_delta" then
@@ -194,7 +238,11 @@ local function dispatchStableMethod(api, method, params)
 			remove = params.remove,
 			masteryEffects = params.masteryEffects,
 		}
-		return api.simulate_node_delta(treeParams, params.fields)
+		local result, err = api.simulate_node_delta(treeParams, params.fields)
+		if not result then
+			return nil, transportError.fromUpstream(nil, err).error
+		end
+		return result
 	end
 
 	if method == "get_runtime_status" then
@@ -205,32 +253,47 @@ local function dispatchStableMethod(api, method, params)
 		return api.health()
 	end
 
-	return nil, "unsupported method: " .. tostring(method)
+	return nil, transportError.new(
+		transportError.codes.METHOD_NOT_FOUND,
+		"unsupported method: " .. tostring(method)
+	)
 end
 
 function M.dispatchRequest(api, request)
+	-- Request dispatch is the only place that classifies transport-layer failures for callers.
 	local validRequest, requestErr = assertRequestShape(request, api)
 	if not validRequest then
-		return buildError(request and request.id or nil, requestErr)
+		return transportError.response(request and request.id or nil, requestErr.code, requestErr.message, requestErr.retryable)
 	end
 
 	if type(api) ~= "table" then
-		return buildError(validRequest.id, "invalid api: expected table")
+		return transportError.response(
+			validRequest.id,
+			transportError.codes.INTERNAL_ERROR,
+			"invalid api: expected table"
+		)
 	end
 
 	local params, paramsErr = normalizeParams(validRequest)
 	if not params then
-		return buildError(validRequest.id, paramsErr)
+		return transportError.response(validRequest.id, paramsErr.code, paramsErr.message, paramsErr.retryable)
 	end
 
 	local ok, preloadErr = preloadBuild(api, validRequest.method, params)
 	if not ok then
-		return buildError(validRequest.id, preloadErr)
+		return transportError.response(validRequest.id, preloadErr.code, preloadErr.message, preloadErr.retryable)
 	end
 
-	local result, dispatchErr = dispatchStableMethod(api, validRequest.method, params)
+	local succeeded, result, dispatchErr = pcall(dispatchStableMethod, api, validRequest.method, params)
+	if not succeeded then
+		return transportError.response(
+			validRequest.id,
+			transportError.codes.INTERNAL_ERROR,
+			"internal error: " .. tostring(result)
+		)
+	end
 	if dispatchErr then
-		return buildError(validRequest.id, dispatchErr)
+		return transportError.response(validRequest.id, dispatchErr.code, dispatchErr.message, dispatchErr.retryable, dispatchErr.details)
 	end
 
 	return buildSuccess(validRequest.id, result)
@@ -240,7 +303,7 @@ function M.run(api, reader, writer)
 	local request, requestErr = M.readRequest(reader)
 	local response
 	if not request then
-		response = buildError(nil, requestErr)
+		response = transportError.response(nil, requestErr.code, requestErr.message, requestErr.retryable)
 	else
 		response = M.dispatchRequest(api, request)
 	end

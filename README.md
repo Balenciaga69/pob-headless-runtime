@@ -93,6 +93,23 @@ Response shape:
 {"id":"1","ok":true,"result":{"mainReady":true}}
 ```
 
+Error shape:
+
+```json
+{"id":"1","ok":false,"error":{"code":"INVALID_PARAMS","message":"item_text or itemText is required","retryable":false}}
+```
+
+Current transport error codes:
+
+- `INVALID_REQUEST`
+- `INVALID_PARAMS`
+- `METHOD_NOT_FOUND`
+- `EXPERIMENTAL_API`
+- `BUILD_NOT_READY`
+- `UNSUPPORTED_FIELD`
+- `TIMEOUT`
+- `INTERNAL_ERROR`
+
 For stateless use, non-load methods may accept preload fields inside `params`:
 
 - `build_xml`

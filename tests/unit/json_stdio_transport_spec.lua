@@ -9,8 +9,14 @@ end
 
 do
 	local request, err = transport.decodeRequest('{"id":"1","method":"equip_item","params":{}}')
-	expect(request == nil, "expected experimental method to be rejected")
-	expect(err:match("unsupported method"), "expected unsupported method error")
+	expect(request ~= nil and err == nil, "expected experimental method to pass envelope decode")
+	expect(request.method == "equip_item", "expected equip_item method to survive decode")
+end
+
+do
+	local request, err = transport.decodeRequest('{"id":"1","method":')
+	expect(request == nil, "expected invalid json to fail")
+	expect(err.code == "INVALID_REQUEST", "expected invalid request code")
 end
 
 do
@@ -97,5 +103,55 @@ do
 	end, function(_) end)
 
 	expect(response.ok == false, "expected invalid params to fail")
-	expect(response.error.code == "INVALID_INPUT", "expected invalid input code")
+	expect(response.error.code == "INVALID_PARAMS", "expected invalid params code")
+end
+
+do
+	local api = {
+		get_api_surface = function()
+			return {
+				stable = { "health" },
+				experimental = { "equip_item" },
+			}
+		end,
+	}
+
+	local response = transport.dispatchRequest(api, {
+		id = "exp-1",
+		method = "equip_item",
+		params = {},
+	})
+
+	expect(response.ok == false, "expected experimental method failure")
+	expect(response.error.code == "EXPERIMENTAL_API", "expected experimental api code")
+end
+
+do
+	local api = {
+		get_stats = function()
+			return nil, "build not initialized"
+		end,
+	}
+
+	local response = transport.dispatchRequest(api, {
+		id = "build-1",
+		method = "get_stats",
+		params = {},
+	})
+
+	expect(response.ok == false, "expected build error")
+	expect(response.error.code == "BUILD_NOT_READY", "expected build not ready code")
+	expect(response.error.retryable == true, "expected build not ready retryable")
+end
+
+do
+	local response = transport.dispatchRequest({}, {
+		id = "params-1",
+		method = "compare_item_stats",
+		params = {},
+	})
+
+	expect(response.ok == false, "expected compare_item_stats param failure")
+	expect(response.error.code == "INVALID_PARAMS", "expected invalid params for missing item")
+	expect(response.error.message:match("item_text or itemText is required"), "expected missing item text message")
 end

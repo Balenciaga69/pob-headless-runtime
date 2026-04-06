@@ -66,6 +66,14 @@ def main() -> int:
                 },
             },
         ),
+        SmokeCase(
+            name="experimental-method",
+            request={"id": "exp-1", "method": "equip_item", "params": {}},
+        ),
+        SmokeCase(
+            name="invalid-params",
+            request={"id": "params-1", "method": "compare_item_stats", "params": {}},
+        ),
     ]
 
     failures = 0
@@ -82,7 +90,7 @@ def main() -> int:
                 and isinstance(payload.get("result"), dict)
                 and "mainReady" in payload["result"]
             )
-        else:
+        elif case.name == "summary":
             result = payload.get("result") or {}
             summary = result.get("summary") or payload.get("result") or {}
             ok = (
@@ -92,6 +100,23 @@ def main() -> int:
                 and isinstance(summary, dict)
                 and summary.get("buildName") == "API Build"
                 and summary.get("mainSkill") == "Kinetic Fusillade"
+            )
+        elif case.name == "experimental-method":
+            error = payload.get("error") or {}
+            ok = (
+                code != 0
+                and payload.get("ok") is False
+                and payload.get("id") == "exp-1"
+                and error.get("code") == "EXPERIMENTAL_API"
+            )
+        else:
+            error = payload.get("error") or {}
+            ok = (
+                code != 0
+                and payload.get("ok") is False
+                and payload.get("id") == "params-1"
+                and error.get("code") == "INVALID_PARAMS"
+                and error.get("retryable") is False
             )
 
         print(f"<== {case.name}: {'PASS' if ok else 'FAIL'}\n")
