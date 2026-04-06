@@ -1,4 +1,4 @@
-"""Run isolated unit tests for custom/pob_headless_refactor."""
+"""Run isolated unit tests for custom/pob-headless-runtime."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
-# Path of Building Headless
+# pob-head-less-runtime
 
-`Path of Building Headless` is a headless automation and integration layer for Path of Building. It exposes PoB runtime capabilities through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without a GUI.
+`pob-head-less-runtime` is a headless automation and integration layer for Path of Building. It exposes PoB runtime capabilities through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without a GUI.
 
 ## Requirements
 
@@ -11,7 +11,7 @@ Required environment:
 - `Path of Building` source/runtime available in the expected repository layout
 - `LuaJIT` runtime
 - `LuaJIT FFI` support
-- Python 3 if you want to use the helper launcher script
+- Python 3 if you want to run the test runners
 
 Practical notes:
 
@@ -24,14 +24,11 @@ Practical notes:
 The main entry point is:
 
 - [`headless_bridge.lua`](headless_bridge.lua)
+- [`json_worker.lua`](json_worker.lua)
 
-That file bootstraps the Lua search path, prepares the runtime, launches PoB in headless mode, and publishes the session API.
+`headless_bridge.lua` bootstraps the Lua search path, prepares the runtime, launches PoB in headless mode, and publishes the session API for legacy script-driven workflows.
 
-The Python script is only a local convenience launcher:
-
-- [`run_headless_demo.py`](run_headless_demo.py)
-
-It demonstrates how to invoke the bridge against a sample build. It is not the primary project entry point.
+`json_worker.lua` is the formal machine-facing entry point for stable automation. It accepts one JSON request on `stdin`, writes one JSON response on `stdout`, and exits.
 
 ## What This Project Is
 
@@ -45,46 +42,99 @@ The architecture follows a three-layer model:
 
 ## Key Features
 
-- Load builds from file, XML, PoB share code, or raw payloads
-- Save builds back to XML, share code, or disk
+- Load builds from XML text or PoB share code
 - Query summaries and selected stats
-- Inspect and switch skills
-- Update supported configuration fields
-- Parse, test, compare, simulate, and equip items
-- Snapshot and restore passive trees
+- Compare candidate items against the current build
 - Simulate passive tree deltas and mastery changes
-- Update imported builds from local payloads or remote character data
-- Inspect runtime state and stub capabilities in headless mode
+- Inspect runtime state in headless mode
 
 ## Quick Start
 
-If you want to run the sample bridge locally, use the helper script:
+If you want to integrate the bridge into another tool, use `json_worker.lua`.
 
-```powershell
-python .\run_headless.py
-```
+`headless_bridge.lua` remains available for legacy script-driven workflows through `POB_HEADLESS_SCRIPT`, but it is no longer the preferred external integration path.
 
-If you want to integrate the bridge into another tool, launch `headless_bridge.lua` directly from the PoB environment and pass your own script through the `POB_HEADLESS_SCRIPT` environment variable.
+If you want a formal machine-facing transport, launch `json_worker.lua` and send one JSON request through `stdin`. The worker returns one JSON response through `stdout` and then exits.
 
 ## Public API Overview
 
-The exported API is centered around a session object created at startup. Common operations include:
+The exported API is centered around a session object created at startup.
 
-- `load_build_file`
+### Stable API v1
+
 - `load_build_xml`
 - `load_build_code`
-- `save_build_xml`
-- `save_build_code`
 - `get_summary`
-- `get_tree`
-- `search_tree_nodes`
-- `parse_item`
-- `test_item`
+- `get_stats(fields)`
 - `compare_item_stats`
 - `simulate_node_delta`
-- `update_imported_build`
+- `get_runtime_status`
+- `health`
 
-If a service is unavailable, the API returns a clear error instead of silently degrading.
+`Stable API v1` is the only contract intended for external automation and future transports.
+
+### JSON Transport
+
+The minimal formal transport is `JSON over stdin/stdout`:
+
+- one request
+- one response
+- process exit
+
+Request shape:
+
+```json
+{"id":"1","method":"health","params":{}}
+```
+
+Response shape:
+
+```json
+{"id":"1","ok":true,"result":{"mainReady":true}}
+```
+
+Error shape:
+
+```json
+{"id":"1","ok":false,"error":{"code":"INVALID_PARAMS","message":"item_text or itemText is required","retryable":false}}
+```
+
+Current transport error codes:
+
+- `INVALID_REQUEST`
+- `INVALID_PARAMS`
+- `METHOD_NOT_FOUND`
+- `EXPERIMENTAL_API`
+- `BUILD_NOT_READY`
+- `UNSUPPORTED_FIELD`
+- `TIMEOUT`
+- `INTERNAL_ERROR`
+
+For stateless use, non-load methods may accept preload fields inside `params`:
+
+- `build_xml`
+- `build_code`
+- `build_name`
+
+Example:
+
+```json
+{"id":"2","method":"get_summary","params":{"build_xml":"<PathOfBuilding>...</PathOfBuilding>"}}
+```
+
+### Experimental API
+
+The implementation still exposes additional methods for refactoring and local automation, but they are not part of the stable contract and may change without compatibility guarantees. This includes:
+
+- file save/load helpers
+- importer update helpers
+- skill selection APIs
+- config mutation APIs
+- tooltip/equip/simulate-mod item helpers
+- `get_tree`
+- snapshot/restore/search helpers
+
+If a service is unavailable, the API returns a clear error instead of silently degrading. Callers can inspect the declared API tiers through `get_api_surface()`.
 
 ## Typical Use Cases
 
@@ -92,30 +142,22 @@ If a service is unavailable, the API returns a clear error instead of silently d
 
 Load a build, inspect summary stats, and compare before/after changes.
 
-### Item evaluation
+### Stable item evaluation
 
 Parse an item, test it against the current build, and review the resulting stat delta before equipping it.
 
-### Passive tree simulation
+### Stable passive tree simulation
 
 Snapshot the current tree, simulate node changes, and restore the previous state after inspection.
-
-### Import automation
-
-Update a build from offline payloads or remote character data while preserving skill selection and runtime consistency.
 
 ## Testing Strategy
 
 The project uses both smoke tests and unit tests to protect the API surface and runtime behavior.
 
-Smoke tests focus on end-to-end workflows such as:
+Smoke tests are split into two suites:
 
-- API contract coverage
-- item comparison and tooltip rendering
-- passive tree simulation
-- config comparison
-- importer updates
-- skill selection restore behavior
+- `stable` for the supported contract surface
+- `experimental` for opt-in behavior that depends more heavily on PoB internals
 
 Unit tests focus on:
 
@@ -129,10 +171,10 @@ Unit tests focus on:
 ## Repository Layout
 
 - `headless_bridge.lua` - runtime bootstrap and session startup
-- `run_headless.py` - convenience launcher for local smoke runs
+- `json_worker.lua` - formal JSON stdin/stdout worker entry point
 - `src` - implementation code
 - `tests` - smoke tests and unit tests
-- `markdown` - documentation and design notes
+- `tips` - notes and design drafts
 
 ## Status
 

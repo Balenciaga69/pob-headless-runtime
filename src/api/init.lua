@@ -64,6 +64,12 @@ function M.create(session)
         get_runtime_status = function()
             return runtimeApi.get_runtime_status(session)
         end,
+        health = function()
+            return runtimeApi.health(session)
+        end,
+        get_api_surface = function()
+            return runtimeApi.get_api_surface()
+        end,
         get_stub_capabilities = function()
             return runtimeApi.get_stub_capabilities()
         end
