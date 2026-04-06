@@ -26,3 +26,9 @@ Run unit tests with:
 ```powershell
 python custom\pob-headless-runtime\tests\run_unit.py
 ```
+
+Run JSON transport smoke tests with:
+
+```powershell
+python custom\pob-headless-runtime\tests\run_transport_smoke.py
+```

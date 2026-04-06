@@ -11,7 +11,7 @@ Required environment:
 - `Path of Building` source/runtime available in the expected repository layout
 - `LuaJIT` runtime
 - `LuaJIT FFI` support
-- Python 3 if you want to use the helper launcher script
+- Python 3 if you want to run the test runners
 
 Practical notes:
 
@@ -24,14 +24,11 @@ Practical notes:
 The main entry point is:
 
 - [`headless_bridge.lua`](headless_bridge.lua)
+- [`json_worker.lua`](json_worker.lua)
 
-That file bootstraps the Lua search path, prepares the runtime, launches PoB in headless mode, and publishes the session API.
+`headless_bridge.lua` bootstraps the Lua search path, prepares the runtime, launches PoB in headless mode, and publishes the session API for legacy script-driven workflows.
 
-The Python script is only a local convenience launcher:
-
-- [`run_headless_demo.py`](run_headless_demo.py)
-
-It demonstrates how to invoke the bridge against a sample build. It is not the primary project entry point.
+`json_worker.lua` is the formal machine-facing entry point for stable automation. It accepts one JSON request on `stdin`, writes one JSON response on `stdout`, and exits.
 
 ## What This Project Is
 
@@ -53,13 +50,11 @@ The architecture follows a three-layer model:
 
 ## Quick Start
 
-If you want to run the sample bridge locally, use the helper script:
+If you want to integrate the bridge into another tool, use `json_worker.lua`.
 
-```powershell
-python .\run_headless_demo.py
-```
+`headless_bridge.lua` remains available for legacy script-driven workflows through `POB_HEADLESS_SCRIPT`, but it is no longer the preferred external integration path.
 
-If you want to integrate the bridge into another tool, launch `headless_bridge.lua` directly from the PoB environment and pass your own script through the `POB_HEADLESS_SCRIPT` environment variable.
+If you want a formal machine-facing transport, launch `json_worker.lua` and send one JSON request through `stdin`. The worker returns one JSON response through `stdout` and then exits.
 
 ## Public API Overview
 
@@ -77,6 +72,38 @@ The exported API is centered around a session object created at startup.
 - `health`
 
 `Stable API v1` is the only contract intended for external automation and future transports.
+
+### JSON Transport
+
+The minimal formal transport is `JSON over stdin/stdout`:
+
+- one request
+- one response
+- process exit
+
+Request shape:
+
+```json
+{"id":"1","method":"health","params":{}}
+```
+
+Response shape:
+
+```json
+{"id":"1","ok":true,"result":{"mainReady":true}}
+```
+
+For stateless use, non-load methods may accept preload fields inside `params`:
+
+- `build_xml`
+- `build_code`
+- `build_name`
+
+Example:
+
+```json
+{"id":"2","method":"get_summary","params":{"build_xml":"<PathOfBuilding>...</PathOfBuilding>"}}
+```
 
 ### Experimental API
 
@@ -127,7 +154,7 @@ Unit tests focus on:
 ## Repository Layout
 
 - `headless_bridge.lua` - runtime bootstrap and session startup
-- `run_headless_demo.py` - convenience launcher for local smoke runs
+- `json_worker.lua` - formal JSON stdin/stdout worker entry point
 - `src` - implementation code
 - `tests` - smoke tests and unit tests
 - `tips` - notes and design drafts

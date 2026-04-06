@@ -34,9 +34,12 @@ local runnerPath = (arg and arg[0]) or "unit_runner.lua"
 local helpersDir = dirname(runnerPath)
 local testsDir = dirname(helpersDir)
 local toolRoot = dirname(testsDir)
+local customRoot = dirname(toolRoot)
+local repoRoot = dirname(customRoot)
 
 prependLuaPath(toolRoot .. package.config:sub(1, 1) .. "src")
 prependLuaPath(helpersDir)
+prependLuaPath(repoRoot .. package.config:sub(1, 1) .. "runtime" .. package.config:sub(1, 1) .. "lua")
 
 table.remove(arg, 1)
 local chunk, err = loadfile(testScript)
