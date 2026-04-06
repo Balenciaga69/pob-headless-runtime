@@ -1,0 +1,118 @@
+"""Run all headless smoke tests in custom/pob_headless_refactor/tests/smoke."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+
+TEST_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = TEST_ROOT.parent.parent.parent
+POB_LUA_PATH = REPO_ROOT / "custom" / "pob_headless_refactor" / "headless_bridge.lua"
+DEFAULT_FIXTURE = REPO_ROOT / "custom" / "pob_headless_refactor" / "tests" / "fixtures" / "mirage_example_xml.xml"
+DEFAULT_RUNTIME_DIR = REPO_ROOT / "runtime"
+SMOKE_DIR = TEST_ROOT / "smoke"
+
+
+@dataclass
+class SmokeResult:
+    script: Path
+    returncode: int
+    stdout: str
+    stderr: str
+
+
+def _build_env(script_path: Path) -> dict[str, str]:
+    env = os.environ.copy()
+    env["POB_HEADLESS_SCRIPT"] = str(script_path)
+    env["PATH"] = str(DEFAULT_RUNTIME_DIR) + os.pathsep + env.get("PATH", "")
+    return env
+
+
+def _list_smoke_scripts() -> list[Path]:
+    return sorted(SMOKE_DIR.glob("*.lua"))
+
+
+def _run_script(script_path: Path, fixture: Path) -> SmokeResult:
+    command = [
+        "luajit",
+        str(POB_LUA_PATH),
+        str(fixture),
+    ]
+    completed = subprocess.run(
+        command,
+        cwd=REPO_ROOT / "src",
+        env=_build_env(script_path),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return SmokeResult(
+        script=script_path,
+        returncode=completed.returncode,
+        stdout=completed.stdout,
+        stderr=completed.stderr,
+    )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--fixture",
+        type=Path,
+        default=DEFAULT_FIXTURE,
+        help="XML build fixture to pass to every smoke test.",
+    )
+    parser.add_argument(
+        "--script",
+        action="append",
+        type=Path,
+        help="Run only the specified smoke script(s). Can be passed multiple times.",
+    )
+    args = parser.parse_args()
+
+    fixture = args.fixture.resolve()
+    if not fixture.exists():
+        print(f"Fixture not found: {fixture}", file=sys.stderr)
+        return 1
+
+    scripts = args.script if args.script else _list_smoke_scripts()
+    if not scripts:
+        print(f"No smoke scripts found in {SMOKE_DIR}", file=sys.stderr)
+        return 1
+
+    results: list[SmokeResult] = []
+    for script in scripts:
+        script_path = script.resolve()
+        if not script_path.exists():
+            print(f"Smoke script not found: {script_path}", file=sys.stderr)
+            return 1
+
+        print(f"==> {script_path.name}")
+        result = _run_script(script_path, fixture)
+        results.append(result)
+
+        if result.stdout:
+            print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+        if result.stderr:
+            print(
+                result.stderr,
+                end="" if result.stderr.endswith("\n") else "\n",
+                file=sys.stderr,
+            )
+
+        status = "PASS" if result.returncode == 0 else "FAIL"
+        print(f"<== {script_path.name}: {status}\n")
+
+    failures = [result for result in results if result.returncode != 0]
+    print(f"Summary: {len(results) - len(failures)} passed, {len(failures)} failed")
+
+    return 0 if not failures else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

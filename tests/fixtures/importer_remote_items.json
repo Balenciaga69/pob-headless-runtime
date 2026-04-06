@@ -1,0 +1,89 @@
+{
+  "character": {
+    "name": "CodexSmokeCharacter",
+    "class": "Witch",
+    "level": 100,
+    "league": "Standard"
+  },
+  "items": [
+    {
+      "id": "codex-body-armour",
+      "inventoryId": "BodyArmour",
+      "frameType": 2,
+      "name": "Codex Shroud",
+      "typeLine": "Saintly Chainmail",
+      "ilvl": 84,
+      "properties": [
+        { "name": "Armour", "values": [["180", 0]] },
+        { "name": "Energy Shield", "values": [["95", 0]] }
+      ],
+      "requirements": [
+        { "name": "Level", "values": [["67", 0]] }
+      ],
+      "explicitMods": [
+        "+120 to maximum Life",
+        "+60 to maximum Energy Shield",
+        "+35% to Cold Resistance"
+      ],
+      "sockets": [
+        { "group": 0, "sColour": "R" },
+        { "group": 0, "sColour": "B" },
+        { "group": 0, "sColour": "B" },
+        { "group": 0, "sColour": "B" },
+        { "group": 0, "sColour": "G" },
+        { "group": 0, "sColour": "B" }
+      ],
+      "socketedItems": [
+        {
+          "socket": 0,
+          "typeLine": "Vortex",
+          "support": false,
+          "properties": [
+            { "name": "Level", "values": [["21", 0]] },
+            { "name": "Quality", "values": [["+20%", 0]] }
+          ]
+        },
+        {
+          "socket": 1,
+          "typeLine": "Hypothermia Support",
+          "support": true,
+          "properties": [
+            { "name": "Level", "values": [["20", 0]] }
+          ]
+        },
+        {
+          "socket": 2,
+          "typeLine": "Controlled Destruction Support",
+          "support": true,
+          "properties": [
+            { "name": "Level", "values": [["20", 0]] }
+          ]
+        },
+        {
+          "socket": 3,
+          "typeLine": "Swift Affliction Support",
+          "support": true,
+          "properties": [
+            { "name": "Level", "values": [["20", 0]] }
+          ]
+        },
+        {
+          "socket": 4,
+          "typeLine": "Efficacy Support",
+          "support": true,
+          "properties": [
+            { "name": "Level", "values": [["20", 0]] }
+          ]
+        },
+        {
+          "socket": 5,
+          "typeLine": "Concentrated Effect Support",
+          "support": true,
+          "properties": [
+            { "name": "Level", "values": [["21", 0]] }
+          ]
+        }
+      ]
+    }
+  ]
+}
