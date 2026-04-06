@@ -7,6 +7,18 @@ local M = {}
 function M.install(session)
     -- Expose the old helper surface by wiring session-backed globals.
     local api = session.api
+    local legacyApi = {}
+
+    -- Preserve the historical flat method layout even though session.api now keeps experimental helpers namespaced.
+    for name, value in pairs(api) do
+        if name ~= "experimental" then
+            legacyApi[name] = value
+        end
+    end
+    for name, value in pairs(api.experimental or {}) do
+        legacyApi[name] = value
+    end
+    legacyApi.experimental = api.experimental
 
     function _G.newBuild()
         -- Reset the build mode and advance one frame to let PoB rebuild state.
@@ -37,7 +49,7 @@ function M.install(session)
         return build
     end
 
-    api.queue = function(action)
+    legacyApi.queue = function(action)
         -- Queue work for deferred execution on a safe frame boundary.
         if type(action) ~= "function" then
             error("queue(action) expects a function")
@@ -45,12 +57,12 @@ function M.install(session)
         session:enqueueAction(action)
     end
 
-    api.stop = function()
+    legacyApi.stop = function()
         -- Mark the runtime as complete for the settle loop.
         session.callbacks.markHeadlessDone()
     end
 
-    _G.PoBHeadless = api
+    _G.PoBHeadless = legacyApi
 end
 
 return M

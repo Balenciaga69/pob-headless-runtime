@@ -9,6 +9,7 @@ local DEFAULT_STATS_FIELDS = {"TotalDPS", "CombinedDPS", "Life", "EnergyShield",
 function M.new(runtimeRepo)
 	return setmetatable({
 		runtime = runtimeRepo,
+		pob = require("api.repo.pob_stats_adapter").new(),
 	}, M)
 end
 
@@ -17,17 +18,7 @@ function M:get_default_stat_fields()
 end
 
 function M:get_main_skill_name(build)
-	if not build or not build.skillsTab then
-		return nil
-	end
-	local group = build.skillsTab.socketGroupList and build.skillsTab.socketGroupList[build.mainSocketGroup or 1]
-	if not group then
-		return nil
-	end
-	local skillIndex = group.mainActiveSkill or 1
-	local skill = group.displaySkillList and group.displaySkillList[skillIndex]
-	local granted = skill and skill.activeEffect and skill.activeEffect.grantedEffect
-	return granted and granted.name or nil
+	return self.pob:get_main_skill_name(build)
 end
 
 function M:get_output()

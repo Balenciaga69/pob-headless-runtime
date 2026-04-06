@@ -1,4 +1,4 @@
--- Headless entry bridge that keeps upstream Launch.lua untouched.
+-- Legacy headless entry bridge that keeps upstream Launch.lua untouched.
 -- The early bootstrap must stay self-contained because local modules are not on package.path yet.
 local function bootstrapLocalLuaPath()
     local wrapperPath = (arg and arg[0]) or "headless_bridge.lua"

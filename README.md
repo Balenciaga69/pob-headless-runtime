@@ -1,6 +1,6 @@
-# pob-head-less-runtime
+# pob-headless-runtime
 
-`pob-head-less-runtime` is a headless automation and integration layer for Path of Building. It exposes PoB runtime capabilities through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without a GUI.
+`pob-headless-runtime` is a headless automation and integration layer for Path of Building. It exposes PoB runtime capabilities through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without a GUI.
 
 ## Requirements
 
@@ -21,14 +21,17 @@ Practical notes:
 
 ## Entry Points
 
-The main entry point is:
+Recommended machine-facing entry point:
 
-- [`headless_bridge.lua`](headless_bridge.lua)
 - [`json_worker.lua`](json_worker.lua)
 
-`headless_bridge.lua` bootstraps the Lua search path, prepares the runtime, launches PoB in headless mode, and publishes the session API for legacy script-driven workflows.
+Legacy compatibility entry point:
+
+- [`headless_bridge.lua`](headless_bridge.lua)
 
 `json_worker.lua` is the formal machine-facing entry point for stable automation. It accepts one JSON request on `stdin`, writes one JSON response on `stdout`, and exits.
+
+`headless_bridge.lua` remains available for legacy script-driven workflows and smoke helpers through `POB_HEADLESS_SCRIPT`, but it is not the preferred external integration path.
 
 ## What This Project Is
 
@@ -50,11 +53,11 @@ The architecture follows a three-layer model:
 
 ## Quick Start
 
-If you want to integrate the bridge into another tool, use `json_worker.lua`.
+If you want to integrate this project into another tool, use `json_worker.lua`.
 
-`headless_bridge.lua` remains available for legacy script-driven workflows through `POB_HEADLESS_SCRIPT`, but it is no longer the preferred external integration path.
+If you want a formal machine-facing transport, launch `json_worker.lua`, send one JSON request through `stdin`, read one JSON response from `stdout`, then exit the process.
 
-If you want a formal machine-facing transport, launch `json_worker.lua` and send one JSON request through `stdin`. The worker returns one JSON response through `stdout` and then exits.
+Use `headless_bridge.lua` only for legacy script-driven flows that still depend on `POB_HEADLESS_SCRIPT`.
 
 ## Public API Overview
 
@@ -73,6 +76,18 @@ The exported API is centered around a session object created at startup.
 
 `Stable API v1` is the only contract intended for external automation and future transports.
 
+Stable methods live at:
+
+- `session.api.<method>`
+
+Experimental methods live at:
+
+- `session.api.experimental.<method>`
+
+Legacy compatibility keeps experimental methods flattened only on:
+
+- `PoBHeadless.<method>`
+
 ### JSON Transport
 
 The minimal formal transport is `JSON over stdin/stdout`:
@@ -90,14 +105,33 @@ Request shape:
 Response shape:
 
 ```json
-{"id":"1","ok":true,"result":{"mainReady":true}}
+{"id":"1","ok":true,"result":{"mainReady":true},"meta":{"request_id":"1","api_version":"v1","engine_version":"2.63.0","duration_ms":42}}
 ```
 
 Error shape:
 
 ```json
-{"id":"1","ok":false,"error":{"code":"INVALID_PARAMS","message":"item_text or itemText is required","retryable":false}}
+{"id":"1","ok":false,"error":{"code":"UNSUPPORTED_FIELD","message":"unsupported config field: enemyLevel","retryable":false,"details":{"field":"enemyLevel"}},"meta":{"request_id":"1","api_version":"v1","engine_version":"2.63.0","duration_ms":42}}
 ```
+
+Response metadata:
+
+- `request_id`
+- `api_version`
+- `engine_version`
+- `duration_ms`
+
+Optional error details:
+
+- `UNSUPPORTED_FIELD`
+  - `field`
+- `BUILD_NOT_READY`
+  - `state`
+- `TIMEOUT`
+  - `max_frames`
+  - `max_seconds`
+  - `pending_action_count`
+  - `readiness`
 
 Current transport error codes:
 
@@ -121,6 +155,11 @@ Example:
 ```json
 {"id":"2","method":"get_summary","params":{"build_xml":"<PathOfBuilding>...</PathOfBuilding>"}}
 ```
+
+Machine-readable contract files:
+
+- [`contracts/stable_api_v1.json`](contracts/stable_api_v1.json)
+- [`contracts/examples/`](contracts/examples)
 
 ### Experimental API
 
@@ -172,6 +211,8 @@ Unit tests focus on:
 
 - `headless_bridge.lua` - runtime bootstrap and session startup
 - `json_worker.lua` - formal JSON stdin/stdout worker entry point
+- `contracts` - machine-readable API contract manifest and examples
+- `docs` - architecture and flow documentation
 - `src` - implementation code
 - `tests` - smoke tests and unit tests
 - `tips` - notes and design drafts

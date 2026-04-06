@@ -1,5 +1,4 @@
 -- Config adapter with a narrowed writable field set.
-local tableUtil = require("util.table")
 
 local M = {}
 M.__index = M
@@ -9,7 +8,7 @@ local CONFIG_FIELD_SPECS = {
 	bandit = { apply = function(build, input, value) input.bandit = tostring(value) end },
 	pantheonMajorGod = { apply = function(build, input, value) input.pantheonMajorGod = tostring(value) end },
 	pantheonMinorGod = { apply = function(build, input, value) input.pantheonMinorGod = tostring(value) end },
-	enemyLevel = { apply = function(build, input, value) build.configTab.enemyLevel = tonumber(value) or build.configTab.enemyLevel end },
+	enemyLevel = { apply = function(build, input, value, pob) pob:set_enemy_level(build, tonumber(value) or pob:get_enemy_level(build)) end },
 	enemyFireResist = { apply = function(build, input, value) input.enemyFireResistance = tonumber(value) end },
 	enemyColdResist = { apply = function(build, input, value) input.enemyColdResistance = tonumber(value) end },
 	enemyLightningResist = { apply = function(build, input, value) input.enemyLightningResistance = tonumber(value) end },
@@ -30,6 +29,7 @@ function M.new(runtimeRepo)
 	-- Bind the config adapter to the runtime adapter.
 	return setmetatable({
 		runtime = runtimeRepo,
+		pob = require("api.repo.pob_config_adapter").new(),
 	}, M)
 end
 
@@ -39,10 +39,7 @@ function M:snapshot()
 	if not build then
 		return nil, err
 	end
-	return {
-		input = tableUtil.shallowCopy(build.configTab.input or {}),
-		enemyLevel = build.configTab.enemyLevel,
-	}, build
+	return self.pob:copy_snapshot(build), build
 end
 
 function M:restore(snapshot)
@@ -51,8 +48,7 @@ function M:restore(snapshot)
 	if not build then
 		return nil, err
 	end
-	build.configTab.input = tableUtil.shallowCopy(snapshot and snapshot.input or {})
-	build.configTab.enemyLevel = snapshot and snapshot.enemyLevel or build.configTab.enemyLevel
+	self.pob:restore_snapshot(build, snapshot)
 	self.runtime:rebuild_config(build)
 	return true
 end
@@ -67,8 +63,7 @@ function M:apply_patch(params)
 		return nil, "config must be a table"
 	end
 
-	local input = build.configTab.input or {}
-	build.configTab.input = input
+	local input = self.pob:get_input(build)
 	for key in pairs(params) do
 		if not CONFIG_FIELD_SPECS[key] then
 			return nil, "unsupported config field: " .. tostring(key)
@@ -77,7 +72,7 @@ function M:apply_patch(params)
 	for key, spec in pairs(CONFIG_FIELD_SPECS) do
 		local value = params[key]
 		if value ~= nil then
-			spec.apply(build, input, value)
+			spec.apply(build, input, value, self.pob)
 		end
 	end
 
@@ -88,7 +83,7 @@ function M:apply_patch(params)
 		bandit = input.bandit or build.bandit,
 		pantheonMajorGod = input.pantheonMajorGod or build.pantheonMajorGod,
 		pantheonMinorGod = input.pantheonMinorGod or build.pantheonMinorGod,
-		enemyLevel = build.configTab.enemyLevel,
+		enemyLevel = self.pob:get_enemy_level(build),
 	}
 end
 

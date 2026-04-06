@@ -5,11 +5,8 @@ M.__index = M
 function M.new(runtimeRepo)
 	return setmetatable({
 		runtime = runtimeRepo,
+		pob = require("api.repo.pob_skills_adapter").new(),
 	}, M)
-end
-
-local function getSkillGroup(build, groupIndex)
-	return build and build.skillsTab and build.skillsTab.socketGroupList and build.skillsTab.socketGroupList[groupIndex] or nil
 end
 
 local function getSelectedSkillEntry(group)
@@ -18,8 +15,8 @@ local function getSelectedSkillEntry(group)
 end
 
 function M:build_skill_snapshot(build, groupIndex, group)
-	groupIndex = tonumber(groupIndex or build.mainSocketGroup or 1) or 1
-	group = group or getSkillGroup(build, groupIndex)
+	groupIndex = tonumber(groupIndex or self.pob:get_selected_group_index(build) or 1) or 1
+	group = group or self.pob:get_group(build, groupIndex)
 	if not group then
 		return nil, "selected skill group not found"
 	end
@@ -47,7 +44,7 @@ function M:build_skill_snapshot(build, groupIndex, group)
 			index = partIndex,
 			name = part and part.name or nil,
 		},
-		calcsSkillNumber = build.calcsTab and build.calcsTab.input and build.calcsTab.input.skill_number or nil,
+		calcsSkillNumber = self.pob:get_calcs_skill_number(build),
 	}
 end
 
@@ -58,7 +55,7 @@ function M:list_skills()
 	end
 
 	local groups = {}
-	for groupIndex, group in ipairs(build.skillsTab.socketGroupList or {}) do
+	for groupIndex, group in ipairs(self.pob:get_socket_groups(build)) do
 		local skills = {}
 		for skillIndex, entry in ipairs(group.displaySkillList or {}) do
 			local activeEffect = entry and entry.activeEffect
@@ -77,14 +74,14 @@ function M:list_skills()
 			displayLabel = group.displayLabel or group.label,
 			slot = group.slot,
 			mainActiveSkill = group.mainActiveSkill,
-			isSelected = build.mainSocketGroup == groupIndex,
+			isSelected = self.pob:get_selected_group_index(build) == groupIndex,
 			skills = skills,
 		}
 	end
 
 	return {
-		mainSocketGroup = build.mainSocketGroup,
-		calcsSkillNumber = build.calcsTab.input and build.calcsTab.input.skill_number or nil,
+		mainSocketGroup = self.pob:get_selected_group_index(build),
+		calcsSkillNumber = self.pob:get_calcs_skill_number(build),
 		groups = groups,
 	}
 end
@@ -106,16 +103,14 @@ function M:apply_selection(params)
 		return nil, "params must be a table"
 	end
 
-	local groupIndex = tonumber(params.group or params.mainSocketGroup or build.mainSocketGroup)
-	local group = build.skillsTab.socketGroupList and build.skillsTab.socketGroupList[groupIndex]
+	local groupIndex = tonumber(params.group or params.mainSocketGroup or self.pob:get_selected_group_index(build))
+	local group = self.pob:get_group(build, groupIndex)
 	if not group then
 		return nil, "invalid skill group"
 	end
 
-	local input = build.calcsTab.input or {}
-	build.calcsTab.input = input
-	build.mainSocketGroup = groupIndex
-	input.skill_number = groupIndex
+	self.pob:set_selected_group_index(build, groupIndex)
+	self.pob:set_calcs_skill_number(build, groupIndex)
 
 	if params.skill ~= nil or params.mainActiveSkill ~= nil then
 		local skillIndex = tonumber(params.skill or params.mainActiveSkill)

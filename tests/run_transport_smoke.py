@@ -51,6 +51,7 @@ def _run_case(case: SmokeCase) -> tuple[int, dict]:
 
 def main() -> int:
     build_xml = FIXTURE_XML.read_text(encoding="utf-8")
+    expected_engine_version = "2.63.0"
     cases = [
         SmokeCase(
             name="health",
@@ -83,16 +84,22 @@ def main() -> int:
         print(json.dumps(payload, ensure_ascii=False))
 
         if case.name == "health":
+            meta = payload.get("meta") or {}
             ok = (
                 code == 0
                 and payload.get("ok") is True
                 and payload.get("id") == "health-1"
                 and isinstance(payload.get("result"), dict)
                 and "mainReady" in payload["result"]
+                and meta.get("request_id") == "health-1"
+                and meta.get("api_version") == "v1"
+                and meta.get("engine_version") == expected_engine_version
+                and isinstance(meta.get("duration_ms"), int)
             )
         elif case.name == "summary":
             result = payload.get("result") or {}
             summary = result.get("summary") or payload.get("result") or {}
+            meta = payload.get("meta") or {}
             ok = (
                 code == 0
                 and payload.get("ok") is True
@@ -100,23 +107,35 @@ def main() -> int:
                 and isinstance(summary, dict)
                 and summary.get("buildName") == "API Build"
                 and summary.get("mainSkill") == "Kinetic Fusillade"
+                and meta.get("request_id") == "summary-1"
+                and meta.get("api_version") == "v1"
+                and meta.get("engine_version") == expected_engine_version
+                and isinstance(meta.get("duration_ms"), int)
             )
         elif case.name == "experimental-method":
             error = payload.get("error") or {}
+            meta = payload.get("meta") or {}
             ok = (
                 code != 0
                 and payload.get("ok") is False
                 and payload.get("id") == "exp-1"
                 and error.get("code") == "EXPERIMENTAL_API"
+                and meta.get("request_id") == "exp-1"
+                and meta.get("api_version") == "v1"
+                and meta.get("engine_version") == expected_engine_version
             )
         else:
             error = payload.get("error") or {}
+            meta = payload.get("meta") or {}
             ok = (
                 code != 0
                 and payload.get("ok") is False
                 and payload.get("id") == "params-1"
                 and error.get("code") == "INVALID_PARAMS"
                 and error.get("retryable") is False
+                and meta.get("request_id") == "params-1"
+                and meta.get("api_version") == "v1"
+                and meta.get("engine_version") == expected_engine_version
             )
 
         print(f"<== {case.name}: {'PASS' if ok else 'FAIL'}\n")

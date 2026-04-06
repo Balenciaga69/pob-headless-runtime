@@ -2,6 +2,7 @@ local json = require("dkjson")
 local transportError = require("transport.error")
 
 local M = {}
+local API_VERSION = "v1"
 
 local DEFAULT_STABLE_METHODS = {
 	load_build_xml = true,
@@ -32,11 +33,33 @@ local function getStableMethods(api)
 	return stable
 end
 
-local function buildSuccess(id, result)
+local function buildMeta(requestId, options)
+	options = options or {}
+	local startedAt = tonumber(options.started_at)
+	local durationMs = 0
+	if startedAt and startedAt >= 0 then
+		durationMs = math.max(0, math.floor(((os.clock() - startedAt) * 1000) + 0.5))
+	end
+	return {
+		request_id = requestId,
+		api_version = tostring(options.api_version or API_VERSION),
+		engine_version = tostring(options.engine_version or "unknown"),
+		duration_ms = durationMs,
+	}
+end
+
+M.buildMeta = buildMeta
+
+local function buildErrorResponse(id, err, options)
+	return transportError.response(id, err.code, err.message, err.retryable, err.details, buildMeta(id, options))
+end
+
+local function buildSuccess(id, result, options)
 	return {
 		id = id,
 		ok = true,
 		result = result,
+		meta = buildMeta(id, options),
 	}
 end
 
@@ -259,53 +282,51 @@ local function dispatchStableMethod(api, method, params)
 	)
 end
 
-function M.dispatchRequest(api, request)
+function M.dispatchRequest(api, request, options)
 	-- Request dispatch is the only place that classifies transport-layer failures for callers.
 	local validRequest, requestErr = assertRequestShape(request, api)
 	if not validRequest then
-		return transportError.response(request and request.id or nil, requestErr.code, requestErr.message, requestErr.retryable)
+		return buildErrorResponse(request and request.id or nil, requestErr, options)
 	end
 
 	if type(api) ~= "table" then
-		return transportError.response(
-			validRequest.id,
+		return buildErrorResponse(validRequest.id, transportError.new(
 			transportError.codes.INTERNAL_ERROR,
 			"invalid api: expected table"
-		)
+		), options)
 	end
 
 	local params, paramsErr = normalizeParams(validRequest)
 	if not params then
-		return transportError.response(validRequest.id, paramsErr.code, paramsErr.message, paramsErr.retryable)
+		return buildErrorResponse(validRequest.id, paramsErr, options)
 	end
 
 	local ok, preloadErr = preloadBuild(api, validRequest.method, params)
 	if not ok then
-		return transportError.response(validRequest.id, preloadErr.code, preloadErr.message, preloadErr.retryable)
+		return buildErrorResponse(validRequest.id, preloadErr, options)
 	end
 
 	local succeeded, result, dispatchErr = pcall(dispatchStableMethod, api, validRequest.method, params)
 	if not succeeded then
-		return transportError.response(
-			validRequest.id,
+		return buildErrorResponse(validRequest.id, transportError.new(
 			transportError.codes.INTERNAL_ERROR,
 			"internal error: " .. tostring(result)
-		)
+		), options)
 	end
 	if dispatchErr then
-		return transportError.response(validRequest.id, dispatchErr.code, dispatchErr.message, dispatchErr.retryable, dispatchErr.details)
+		return buildErrorResponse(validRequest.id, dispatchErr, options)
 	end
 
-	return buildSuccess(validRequest.id, result)
+	return buildSuccess(validRequest.id, result, options)
 end
 
-function M.run(api, reader, writer)
+function M.run(api, reader, writer, options)
 	local request, requestErr = M.readRequest(reader)
 	local response
 	if not request then
-		response = transportError.response(nil, requestErr.code, requestErr.message, requestErr.retryable)
+		response = buildErrorResponse(nil, requestErr, options)
 	else
-		response = M.dispatchRequest(api, request)
+		response = M.dispatchRequest(api, request, options)
 	end
 
 	local payload = M.encodeResponse(response)
