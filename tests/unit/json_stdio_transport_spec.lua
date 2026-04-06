@@ -36,6 +36,11 @@ do
 
 	expect(response.ok == true, "expected health response success")
 	expect(response.result.ok == true, "expected health result payload")
+	expect(type(response.meta) == "table", "expected response metadata")
+	expect(response.meta.request_id == "health-1", "expected request_id metadata")
+	expect(response.meta.api_version == "v1", "expected api version metadata")
+	expect(response.meta.engine_version == "unknown", "expected default engine version metadata")
+	expect(type(response.meta.duration_ms) == "number", "expected duration metadata")
 	expect(calls[1] == "health", "expected health dispatch")
 end
 
@@ -104,6 +109,8 @@ do
 
 	expect(response.ok == false, "expected invalid params to fail")
 	expect(response.error.code == "INVALID_PARAMS", "expected invalid params code")
+	expect(response.meta.request_id == "bad", "expected invalid params request_id metadata")
+	expect(response.meta.api_version == "v1", "expected invalid params api version metadata")
 end
 
 do
@@ -154,4 +161,54 @@ do
 	expect(response.ok == false, "expected compare_item_stats param failure")
 	expect(response.error.code == "INVALID_PARAMS", "expected invalid params for missing item")
 	expect(response.error.message:match("item_text or itemText is required"), "expected missing item text message")
+	expect(response.meta.request_id == "params-1", "expected missing item request_id metadata")
+	expect(response.meta.duration_ms >= 0, "expected non-negative duration metadata")
+end
+
+do
+	local response = transport.dispatchRequest({
+		health = function()
+			return { ok = true }
+		end,
+	}, {
+		id = "meta-1",
+		method = "health",
+		params = {},
+	}, {
+		api_version = "v-test",
+		engine_version = "2.63.0",
+		started_at = os.clock() - 0.01,
+	})
+
+	expect(response.ok == true, "expected metadata override response success")
+	expect(response.meta.request_id == "meta-1", "expected metadata override request id")
+	expect(response.meta.api_version == "v-test", "expected metadata override api version")
+	expect(response.meta.engine_version == "2.63.0", "expected metadata override engine version")
+	expect(response.meta.duration_ms >= 0, "expected metadata override duration metadata")
+end
+
+do
+	local timeout = require("transport.error").fromUpstream(
+		"time-1",
+		"headless runtime did not settle within 200 frame(s) / 5.00 second(s) (pending=2, mainReady=true, buildReady=false, calcsReady=false, outputReady=false)"
+	)
+
+	expect(timeout.error.code == "TIMEOUT", "expected timeout code")
+	expect(timeout.error.details.max_frames == 200, "expected timeout max_frames detail")
+	expect(timeout.error.details.max_seconds == 5, "expected timeout max_seconds detail")
+	expect(timeout.error.details.pending_action_count == 2, "expected timeout pending detail")
+	expect(timeout.error.details.readiness.main_ready == true, "expected timeout main_ready detail")
+	expect(timeout.error.details.readiness.build_ready == false, "expected timeout build_ready detail")
+end
+
+do
+	local unsupported = require("transport.error").fromUpstream("cfg-1", "unsupported config field: enemyLevel")
+	expect(unsupported.error.code == "UNSUPPORTED_FIELD", "expected unsupported field code")
+	expect(unsupported.error.details.field == "enemyLevel", "expected unsupported field detail")
+end
+
+do
+	local notReady = require("transport.error").fromUpstream("build-2", "build/config not initialized")
+	expect(notReady.error.code == "BUILD_NOT_READY", "expected build not ready code detail test")
+	expect(notReady.error.details.state == "build_config", "expected build not ready state detail")
 end

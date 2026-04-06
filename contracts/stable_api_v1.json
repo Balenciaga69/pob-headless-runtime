@@ -1,0 +1,130 @@
+{
+  "schema_type": "contract_manifest",
+  "contract_version": "stable_api_v1",
+  "entry_points": {
+    "machine": "json_worker.lua",
+    "legacy": "headless_bridge.lua"
+  },
+  "namespaces": {
+    "stable": "top_level",
+    "experimental": "experimental",
+    "legacy": "flattened_globals"
+  },
+  "transport": {
+    "kind": "json_stdio",
+    "request": {
+      "required": ["id", "method", "params"],
+      "properties": {
+        "id": "string|null",
+        "method": "string",
+        "params": "object"
+      }
+    },
+    "response": {
+      "required": ["id", "ok", "meta"],
+      "success_result": "result",
+      "failure_result": "error"
+    },
+    "meta": {
+      "required": ["request_id", "api_version", "engine_version", "duration_ms"]
+    },
+    "error_codes": [
+      "INVALID_REQUEST",
+      "INVALID_PARAMS",
+      "METHOD_NOT_FOUND",
+      "EXPERIMENTAL_API",
+      "BUILD_NOT_READY",
+      "UNSUPPORTED_FIELD",
+      "TIMEOUT",
+      "INTERNAL_ERROR"
+    ]
+  },
+  "stable_methods": {
+    "load_build_xml": {
+      "params": {
+        "xmlText": "string",
+        "build_xml": "string",
+        "name": "string",
+        "build_name": "string"
+      },
+      "notes": ["xmlText or build_xml is required"]
+    },
+    "load_build_code": {
+      "params": {
+        "code": "string",
+        "build_code": "string",
+        "name": "string",
+        "build_name": "string"
+      },
+      "notes": ["code or build_code is required"]
+    },
+    "get_summary": {
+      "params": {
+        "build_xml": "string",
+        "build_code": "string",
+        "build_name": "string"
+      }
+    },
+    "get_stats": {
+      "params": {
+        "fields": "string[]",
+        "build_xml": "string",
+        "build_code": "string",
+        "build_name": "string"
+      }
+    },
+    "compare_item_stats": {
+      "params": {
+        "item_text": "string",
+        "itemText": "string",
+        "slot": "string",
+        "fields": "string[]",
+        "build_xml": "string",
+        "build_code": "string",
+        "build_name": "string"
+      },
+      "notes": ["item_text or itemText is required"]
+    },
+    "simulate_node_delta": {
+      "params": {
+        "add": "number[]",
+        "remove": "number[]",
+        "masteryEffects": "object",
+        "fields": "string[]",
+        "build_xml": "string",
+        "build_code": "string",
+        "build_name": "string"
+      }
+    },
+    "get_runtime_status": {
+      "params": {}
+    },
+    "health": {
+      "params": {}
+    }
+  },
+  "experimental_methods": [
+    "load_build_file",
+    "save_build_xml",
+    "save_build_code",
+    "save_build_file",
+    "update_imported_build",
+    "compare_stats",
+    "list_skills",
+    "select_skill",
+    "get_selected_skill",
+    "restore_skill_selection",
+    "set_config",
+    "compare_config_stats",
+    "parse_item",
+    "test_item",
+    "simulate_mod",
+    "render_item_tooltip",
+    "equip_item",
+    "get_tree",
+    "get_tree_node",
+    "search_tree_nodes",
+    "create_tree_snapshot",
+    "restore_tree_snapshot"
+  ]
+}

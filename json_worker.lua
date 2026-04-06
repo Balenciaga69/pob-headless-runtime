@@ -35,6 +35,20 @@ local context = require("entry.context").fromArg0(argv[0])
 local bootstrap = require("entry.bootstrap")
 local transportError = require("transport.error")
 
+local function readManifestVersion(repoRoot, pathSeparator)
+	-- Resolve the upstream PoB version once so every worker response reports the engine identity.
+	local manifestPath = repoRoot .. pathSeparator .. "manifest.xml"
+	local handle = io.open(manifestPath, "rb")
+	if not handle then
+		return "unknown"
+	end
+
+	local content = handle:read("*a")
+	handle:close()
+	local version = content and content:match('<Version number="([^"]+)"')
+	return version or "unknown"
+end
+
 local function stderrPrint(...)
 	local parts = {}
 	for index = 1, select("#", ...) do
@@ -48,6 +62,11 @@ _G.print = stderrPrint
 bootstrap.prepareEnvironment(context)
 
 local transport = require("transport.json_stdio")
+local responseOptions = {
+	api_version = "v1",
+	engine_version = readManifestVersion(context.repoRoot, context.pathSeparator),
+	started_at = os.clock(),
+}
 local request, requestErr = transport.readRequest()
 
 if not request then
@@ -55,7 +74,9 @@ if not request then
 		nil,
 		requestErr.code,
 		requestErr.message,
-		requestErr.retryable
+		requestErr.retryable,
+		nil,
+		transport.buildMeta(nil, responseOptions)
 	))
 	io.write(payload)
 	os.exit(1)
@@ -72,17 +93,14 @@ local _, settleErr = session:runUntilSettled({
 })
 
 if settleErr then
-	local payload = transport.encodeResponse(transportError.response(
-		request.id,
-		transportError.codes.TIMEOUT,
-		settleErr,
-		true
-	))
+	local payload = transport.encodeResponse(
+		transportError.fromUpstream(request.id, settleErr, transport.buildMeta(request.id, responseOptions))
+	)
 	io.write(payload)
 	os.exit(1)
 end
 
-local response = transport.dispatchRequest(session.api, request)
+local response = transport.dispatchRequest(session.api, request, responseOptions)
 io.write(transport.encodeResponse(response))
 if response.ok then
 	os.exit(0)

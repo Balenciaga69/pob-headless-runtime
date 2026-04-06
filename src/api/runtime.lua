@@ -56,6 +56,11 @@ function M.get_api_surface()
 	return {
 		stable = { unpack(API_SURFACE.stable) },
 		experimental = { unpack(API_SURFACE.experimental) },
+		namespaces = {
+			stable = "top_level",
+			experimental = "experimental",
+			legacy = "flattened_globals",
+		},
 	}
 end
 

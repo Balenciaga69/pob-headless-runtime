@@ -1,0 +1,16 @@
+{
+  "id": "health-1",
+  "ok": true,
+  "result": {
+    "mainReady": true,
+    "buildReady": true,
+    "calcsReady": true,
+    "outputReady": true
+  },
+  "meta": {
+    "request_id": "health-1",
+    "api_version": "v1",
+    "engine_version": "2.63.0",
+    "duration_ms": 42
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "cfg-1",
+  "ok": false,
+  "error": {
+    "code": "UNSUPPORTED_FIELD",
+    "message": "unsupported config field: enemyLevel",
+    "retryable": false,
+    "details": {
+      "field": "enemyLevel"
+    }
+  },
+  "meta": {
+    "request_id": "cfg-1",
+    "api_version": "v1",
+    "engine_version": "2.63.0",
+    "duration_ms": 17
+  }
+}

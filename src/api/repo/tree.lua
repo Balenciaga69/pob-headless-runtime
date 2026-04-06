@@ -257,6 +257,7 @@ function M.new(runtimeRepo, statsRepo)
 	return setmetatable({
 		runtime = runtimeRepo,
 		stats = statsRepo,
+		pob = require("api.repo.pob_tree_adapter").new(),
 	}, M)
 end
 
@@ -464,9 +465,7 @@ function M:restore_snapshot(snapshot)
 	if build.spec.BuildClusterJewelGraphs then
 		build.spec:BuildClusterJewelGraphs()
 	end
-	if build.treeTab and build.treeTab.SetActiveSpec then
-		build.treeTab:SetActiveSpec(build.treeTab.activeSpec or 1)
-	end
+	self.pob:refresh_active_spec(build)
 	local _, outputErr = self.runtime:rebuild_output(build)
 	if outputErr then
 		return nil, outputErr
@@ -530,9 +529,7 @@ function M:apply_tree_state(build, treeState)
 	if build.spec.BuildClusterJewelGraphs then
 		build.spec:BuildClusterJewelGraphs()
 	end
-	if build.treeTab and build.treeTab.SetActiveSpec then
-		build.treeTab:SetActiveSpec(build.treeTab.activeSpec or 1)
-	end
+	self.pob:refresh_active_spec(build)
 	return self.runtime:rebuild_output(build)
 end
 

@@ -34,6 +34,7 @@ end
 function M.new(runtimeRepo)
 	return setmetatable({
 		runtime = runtimeRepo,
+		pob = require("api.repo.pob_items_adapter").new(),
 	}, M)
 end
 
@@ -74,7 +75,7 @@ function M:render_tooltip(itemText, requestedSlot)
 		slot = nil
 	end
 
-	local ok, tooltipErr = pcall(build.itemsTab.AddItemTooltip, build.itemsTab, collector, item, slot)
+	local ok, tooltipErr = self.pob:render_tooltip(build, collector, item, slot)
 	if not ok then
 		return nil, "failed to render item tooltip: " .. tostring(tooltipErr)
 	end
@@ -109,12 +110,12 @@ function M:simulate_outputs(itemText, requestedSlot)
 		return nil, slot
 	end
 
-	local calcFunc, baseOutput = build.calcsTab:GetMiscCalculator()
+	local calcFunc, baseOutput = self.pob:get_misc_calculator(build)
 	local newOutput = calcFunc({
 		repSlotName = slotName,
 		repItem = item,
 	})
-	local equippedItem = slot and slot.selItemId and build.itemsTab.items[slot.selItemId] or nil
+	local _, equippedItem = self.pob:get_item_by_slot(build, slotName)
 
 	return {
 		build = build,
@@ -143,11 +144,10 @@ function M:get_equipped_item(slotName)
 	if type(slotName) ~= "string" or slotName == "" then
 		return nil, "invalid item slot"
 	end
-	local slot = build.itemsTab.slots and build.itemsTab.slots[slotName] or nil
+	local slot, equippedItem = self.pob:get_item_by_slot(build, slotName)
 	if not slot then
 		return nil, "invalid item slot"
 	end
-	local equippedItem = slot.selItemId and build.itemsTab.items[slot.selItemId] or nil
 	if not equippedItem then
 		return nil, "no item equipped in slot " .. tostring(slotName)
 	end
@@ -186,22 +186,15 @@ function M:equip_item(itemText, requestedSlot)
 		return nil, slot
 	end
 
-	local previousItem = slot and slot.selItemId and build.itemsTab.items[slot.selItemId] or nil
-	build.itemsTab:AddItem(item, true)
-	slot:SetSelItemId(item.id)
-	build.itemsTab:PopulateSlots()
-	build.itemsTab:AddUndoState()
-	build.buildFlag = true
-	if build.configTab and build.configTab.BuildModList then
-		build.configTab:BuildModList()
-	end
+	local _, previousItem = self.pob:get_item_by_slot(build, slotName)
+	local equippedItem = self.pob:add_and_equip_item(build, item, slot)
 	self.runtime:rebuild_output(build)
 	self.runtime:run_frames_if_idle(1)
 
 	return {
 		slot = slotResolver.summarizeSlot(slotName, slot, normalizedSlot),
 		previousItem = parser.summarizeItem(previousItem),
-		item = parser.summarizeItem(build.itemsTab.items[item.id]),
+		item = parser.summarizeItem(equippedItem),
 	}
 end
 

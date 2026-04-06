@@ -13,9 +13,11 @@ do
 	expect(type(api.get_runtime_status) == "function", "expected get_runtime_status export")
 	expect(type(api.health) == "function", "expected health export")
 	expect(type(api.get_api_surface) == "function", "expected get_api_surface export")
-	expect(type(api.update_imported_build) == "function", "expected update_imported_build export")
-	expect(type(api.compare_config_stats) == "function", "expected compare_config_stats export")
-	expect(type(api.render_item_tooltip) == "function", "expected render_item_tooltip export")
+	expect(type(api.experimental) == "table", "expected experimental namespace export")
+	expect(type(api.update_imported_build) == "nil", "expected experimental method to stay off stable root")
+	expect(type(api.experimental.update_imported_build) == "function", "expected experimental build export")
+	expect(type(api.experimental.compare_config_stats) == "function", "expected experimental config export")
+	expect(type(api.experimental.render_item_tooltip) == "function", "expected experimental item export")
 end
 
 do
@@ -32,6 +34,7 @@ do
 	expect(type(surface) == "table", "expected api surface table")
 	expect(type(surface.stable) == "table", "expected stable api tier")
 	expect(type(surface.experimental) == "table", "expected experimental api tier")
+	expect(type(surface.namespaces) == "table", "expected namespace model")
 
 	local stable = {}
 	for _, name in ipairs(surface.stable) do
@@ -49,4 +52,6 @@ do
 	expect(experimental.update_imported_build == true, "expected update_imported_build to be experimental")
 	expect(experimental.render_item_tooltip == true, "expected render_item_tooltip to be experimental")
 	expect(experimental.select_skill == true, "expected select_skill to be experimental")
+	expect(surface.namespaces.stable == "top_level", "expected stable namespace marker")
+	expect(surface.namespaces.experimental == "experimental", "expected experimental namespace marker")
 end

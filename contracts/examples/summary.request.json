@@ -1,0 +1,7 @@
+{
+  "id": "summary-1",
+  "method": "get_summary",
+  "params": {
+    "build_xml": "<PathOfBuilding>...</PathOfBuilding>"
+  }
+}

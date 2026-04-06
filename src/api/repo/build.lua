@@ -1,26 +1,6 @@
 -- Build persistence adapter over the live PoB object graph.
 local M = {}
-
-local function prepareBuildForSave(build)
-	-- Sync derived build state before serializing to XML.
-	if not build then
-		return
-	end
-
-	if build.spec and build.spec.curClass and build.spec.curClass.classes then
-		local ascendId = build.spec.curAscendClassId or 0
-		local ascendClass = build.spec.curClass.classes[ascendId] or build.spec.curClass.classes[0]
-		if ascendClass and ascendClass.name then
-			build.spec.curAscendClassName = ascendClass.name
-		end
-	end
-
-	if build.skillsTab and build.skillsTab.socketGroupList and build.skillsTab.ProcessSocketGroup then
-		for _, socketGroup in ipairs(build.skillsTab.socketGroupList) do
-			build.skillsTab:ProcessSocketGroup(socketGroup)
-		end
-	end
-end
+local pob = require("api.repo.pob_build_adapter").new()
 
 function M.loadBuildXml(session, xmlText, name)
 	-- Load a build from XML text into the running session.
@@ -71,7 +51,7 @@ function M.saveBuildXml(session)
 		return nil, "build not initialized"
 	end
 
-	prepareBuildForSave(build)
+	pob:prepare_for_save(build)
 	local xmlText = build:SaveDB("headless-api-export")
 	if not xmlText then
 		return nil, "failed to compose xml"
