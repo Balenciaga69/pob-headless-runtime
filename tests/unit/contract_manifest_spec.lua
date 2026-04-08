@@ -46,8 +46,12 @@ do
         "expected stable get_summary manifest"
     )
     expect(
-        type(manifest.stable_methods.compare_item_stats) == "table",
-        "expected compare_item_stats manifest"
+        type(manifest.stable_methods.get_display_stats) == "table",
+        "expected stable get_display_stats manifest"
+    )
+    expect(
+        type(manifest.stable_methods.equip_item) == "table",
+        "expected equip_item manifest"
     )
     expect(type(manifest.experimental_methods) == "table", "expected experimental methods list")
 end
@@ -58,9 +62,28 @@ do
 end
 
 do
+    local displayStatsRequest =
+        readJson(resolveToolPath("contracts/examples/display_stats.request.json"))
+    expect(
+        displayStatsRequest.method == "get_display_stats",
+        "expected display stats request example"
+    )
+end
+
+do
     local healthResponse = readJson(resolveToolPath("contracts/examples/health.response.json"))
     expect(healthResponse.ok == true, "expected health response example success")
     expect(healthResponse.meta.api_version == "v1", "expected health response metadata example")
+end
+
+do
+    local displayStatsResponse =
+        readJson(resolveToolPath("contracts/examples/display_stats.response.json"))
+    expect(displayStatsResponse.ok == true, "expected display stats response example success")
+    expect(
+        displayStatsResponse.result._meta.skillContext.selectionSource == "calcs",
+        "expected display stats skill context example"
+    )
 end
 
 do

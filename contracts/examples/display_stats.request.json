@@ -1,0 +1,7 @@
+{
+  "id": "display-stats-1",
+  "method": "get_display_stats",
+  "params": {
+    "build_xml": "<PathOfBuilding>...</PathOfBuilding>"
+  }
+}

@@ -5,14 +5,6 @@ local testkit = require("testkit")
 local xmlPath = smokekit.requireXmlArg()
 
 smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
-    local skills, skillsErr = api.list_skills()
-    if not skills then
-        return false, skillsErr
-    end
-    testkit.expect(
-        skills.groups and #skills.groups > 0,
-        "contract_regression: expected at least one skill group"
-    )
     testkit.expect(summary.buildName ~= nil, "contract_regression: expected build name in summary")
 
     local stats, statsErr = api.get_stats({ "Life", "TotalDPS" })
@@ -28,34 +20,37 @@ smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
         "contract_regression: expected at least one stat value"
     )
 
-    local firstGroup = skills.groups[1]
-    local firstSkill = firstGroup and firstGroup.skills and firstGroup.skills[1]
-    if firstGroup and firstSkill then
-        local selected, selectErr = api.select_skill({
-            group = firstGroup.index,
-            skill = firstGroup.mainActiveSkill or firstSkill.index or 1,
-        })
-        if not selected then
-            return false, selectErr
-        end
-        testkit.expect(
-            selected.mainSocketGroup == firstGroup.index,
-            "contract_regression: selected group mismatch"
-        )
+    local beforeEquipment, equipmentErr = api.list_equipment()
+    if not beforeEquipment then
+        return false, equipmentErr
     end
+    testkit.expect(
+        type(beforeEquipment.slots) == "table" and #beforeEquipment.slots > 0,
+        "contract_regression: expected at least one equipment slot"
+    )
 
-    local _, configErr = api.set_config({
+    local config, configErr = api.set_config({
         enemyLevel = 84,
         enemyIsBoss = "Pinnacle",
     })
-    if configErr then
+    if not config then
         return false, configErr
     end
+    testkit.expect(config.enemyLevel == 84, "contract_regression: expected enemy level change")
 
     local _, invalidConfigErr = api.set_config({ invalidField = true })
     testkit.expect(
         invalidConfigErr ~= nil and invalidConfigErr:match("^unsupported config field:"),
         "contract_regression: expected unsupported field error"
+    )
+
+    local currentConfig, currentConfigErr = api.get_config()
+    if not currentConfig then
+        return false, currentConfigErr
+    end
+    testkit.expect(
+        currentConfig.enemyIsBoss == "Pinnacle",
+        "contract_regression: expected config readback"
     )
 
     local xmlText, xmlErr = api.save_build_xml()
@@ -66,7 +61,7 @@ smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
 
     print("buildName", summary.buildName or "")
     print("mainSkill", stats._meta and stats._meta.mainSkill or "")
-    print("skillGroups", #skills.groups)
+    print("equipmentSlots", #beforeEquipment.slots)
     print("xmlSize", #xmlText)
     return true
 end)

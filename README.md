@@ -1,6 +1,6 @@
 # pob-headless-runtime
 
-`pob-headless-runtime` is a headless automation layer for Path of Building. It exposes PoB runtime behavior through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without the GUI.
+`pob-headless-runtime` is a headless automation layer for Path of Building. It exposes a small maintained API so external tools can open builds, save builds, read stats, mutate equipment, and apply config changes without the GUI.
 
 This repository is not a standalone PoB fork. It is meant to live inside a compatible Path of Building repository layout.
 
@@ -22,6 +22,16 @@ PathOfBuilding/
 ├─ runtime/
 └─ pob-headless-runtime/
 ```
+
+## Versioning
+
+This project follows a structured versioning policy.
+
+- Current stage: pre-`1.0.0`, with a maintained stable contract
+- Only stable API is covered by compatibility guarantees
+- New stable capabilities require a `MINOR` version bump during `0.x`
+
+See: [VERSIONING.md](./VERSIONING.md)
 
 The current compatible host repository used for local smoke and runtime testing is:
 
@@ -168,9 +178,18 @@ Stable methods live under:
 
 - `session.api.<method>`
 
+Current stable stats behavior:
+
+- `get_summary` returns a compact snapshot for dashboards and load/save flows
+- `get_stats(fields)` returns raw numeric output fields by name
+- `get_display_stats` returns GUI-like display entries derived from PoB's display stat catalog
+- summary and display-stats metadata include calcs skill selection context so downstream UIs can explain which skill / skill part produced the current DPS
+
 Experimental methods live under:
 
 - `session.api.experimental.<method>`
+
+Experimental methods are compatibility-only. They are not part of the maintained product contract, may lag upstream PoB changes, and should be treated as author-unmaintained helpers.
 
 Legacy compatibility keeps flattened experimental methods only on:
 

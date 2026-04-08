@@ -7,10 +7,17 @@ local M = {}
 local DEFAULT_STABLE_METHODS = {
     load_build_xml = true,
     load_build_code = true,
+    load_build_file = true,
+    save_build_xml = true,
+    save_build_code = true,
+    save_build_file = true,
     get_summary = true,
     get_stats = true,
-    compare_item_stats = true,
-    simulate_node_delta = true,
+    get_display_stats = true,
+    equip_item = true,
+    list_equipment = true,
+    set_config = true,
+    get_config = true,
     get_runtime_status = true,
     health = true,
 }
@@ -62,7 +69,7 @@ end
 -- Preload build data from stateless request params when the method is not a load call.
 local function preloadBuild(api, method, params)
     -- Allow callers to send build payloads inline for convenience.
-    if method == "load_build_xml" or method == "load_build_code" then
+    if method == "load_build_xml" or method == "load_build_code" or method == "load_build_file" then
         return true
     end
     if type(params.build_xml) == "string" and params.build_xml ~= "" then
@@ -125,6 +132,42 @@ local function dispatchStableMethod(api, method, params)
         end
         return { loaded = true, summary = summary }
     end
+    if method == "load_build_file" then
+        local path, paramErr = requestUtil.requireNonEmptyString(params, "path", "path")
+        if not path then
+            return nil, paramErr
+        end
+        local loaded, err = api.load_build_file(path)
+        if not loaded then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        local summary, summaryErr = api.get_summary()
+        if not summary then
+            return nil, transportError.fromUpstream(nil, summaryErr).error
+        end
+        return { loaded = true, summary = summary }
+    end
+    if method == "save_build_xml" then
+        local result, err = api.save_build_xml()
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return { xml = result }
+    end
+    if method == "save_build_code" then
+        local result, err = api.save_build_code()
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return { code = result }
+    end
+    if method == "save_build_file" then
+        local result, err = api.save_build_file(params.path)
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
     if method == "get_summary" then
         local result, err = api.get_summary()
         if not result then
@@ -139,7 +182,14 @@ local function dispatchStableMethod(api, method, params)
         end
         return result
     end
-    if method == "compare_item_stats" then
+    if method == "get_display_stats" then
+        local result, err = api.get_display_stats()
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "equip_item" then
         local itemText, paramErr =
             requestUtil.requireNonEmptyString(params, "item_text", "item_text or itemText")
         if not itemText then
@@ -149,19 +199,28 @@ local function dispatchStableMethod(api, method, params)
         if not itemText then
             return nil, paramErr
         end
-        local result, err = api.compare_item_stats(itemText, params.slot, params.fields)
+        local result, err = api.equip_item(itemText, params.slot)
         if not result then
             return nil, transportError.fromUpstream(nil, err).error
         end
         return result
     end
-    if method == "simulate_node_delta" then
-        local treeParams = {
-            add = params.add,
-            remove = params.remove,
-            masteryEffects = params.masteryEffects,
-        }
-        local result, err = api.simulate_node_delta(treeParams, params.fields)
+    if method == "list_equipment" then
+        local result, err = api.list_equipment()
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "set_config" then
+        local result, err = api.set_config(params)
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "get_config" then
+        local result, err = api.get_config()
         if not result then
             return nil, transportError.fromUpstream(nil, err).error
         end

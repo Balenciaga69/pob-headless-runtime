@@ -57,7 +57,6 @@ end
 function M.newQueuedBuildFlow(api, xmlPath)
     local loaded = false
     local build
-    local experimental = api and api.experimental or api
 
     return {
         load = function()
@@ -65,8 +64,12 @@ function M.newQueuedBuildFlow(api, xmlPath)
                 return build
             end
 
-            -- Accept either the new namespaced session API or the legacy flattened PoBHeadless surface.
-            local loadedBuild, err = experimental.load_build_file(xmlPath)
+            -- Prefer the maintained stable root surface; keep a fallback for legacy callers.
+            local loadBuildFile = api and api.load_build_file
+            if type(loadBuildFile) ~= "function" then
+                loadBuildFile = api and api.experimental and api.experimental.load_build_file
+            end
+            local loadedBuild, err = loadBuildFile(xmlPath)
             if err then
                 error(err, 0)
             end

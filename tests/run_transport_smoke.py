@@ -16,6 +16,7 @@ REPO_ROOT = TOOL_ROOT.parent
 WORKER_PATH = TOOL_ROOT / "json_worker.lua"
 DEFAULT_RUNTIME_DIR = REPO_ROOT / "runtime"
 FIXTURE_XML = TEST_ROOT / "fixtures" / "mirage_example_xml.xml"
+FIXTURE_CODE = TEST_ROOT / "fixtures" / "mirage_exmple_code.txt"
 
 
 @dataclass
@@ -51,6 +52,7 @@ def _run_case(case: SmokeCase) -> tuple[int, dict]:
 
 def main() -> int:
     build_xml = FIXTURE_XML.read_text(encoding="utf-8")
+    build_code = FIXTURE_CODE.read_text(encoding="utf-8").strip()
     expected_engine_version = "2.63.0"
     cases = [
         SmokeCase(
@@ -68,12 +70,33 @@ def main() -> int:
             },
         ),
         SmokeCase(
+            name="display-stats",
+            request={
+                "id": "display-stats-1",
+                "method": "get_display_stats",
+                "params": {
+                    "build_xml": build_xml,
+                },
+            },
+        ),
+        SmokeCase(
+            name="build-code",
+            request={
+                "id": "code-1",
+                "method": "load_build_code",
+                "params": {
+                    "code": build_code,
+                    "build_name": "Transport Build",
+                },
+            },
+        ),
+        SmokeCase(
             name="experimental-method",
-            request={"id": "exp-1", "method": "equip_item", "params": {}},
+            request={"id": "exp-1", "method": "compare_item_stats", "params": {}},
         ),
         SmokeCase(
             name="invalid-params",
-            request={"id": "params-1", "method": "compare_item_stats", "params": {}},
+            request={"id": "params-1", "method": "equip_item", "params": {}},
         ),
     ]
 
@@ -108,6 +131,44 @@ def main() -> int:
                 and summary.get("buildName") == "API Build"
                 and summary.get("mainSkill") == "Kinetic Fusillade"
                 and meta.get("request_id") == "summary-1"
+                and meta.get("api_version") == "v1"
+                and meta.get("engine_version") == expected_engine_version
+                and isinstance(meta.get("duration_ms"), int)
+            )
+        elif case.name == "build-code":
+            result = payload.get("result") or {}
+            summary = result.get("summary") or {}
+            meta = payload.get("meta") or {}
+            ok = (
+                code == 0
+                and payload.get("ok") is True
+                and payload.get("id") == "code-1"
+                and isinstance(summary, dict)
+                and summary.get("buildName") == "Transport Build"
+                and summary.get("className") == "Templar"
+                and summary.get("ascendClassName") == "Hierophant"
+                and summary.get("level") == 100
+                and summary.get("mainSkill") == "Kinetic Fusillade"
+                and meta.get("request_id") == "code-1"
+                and meta.get("api_version") == "v1"
+                and meta.get("engine_version") == expected_engine_version
+                and isinstance(meta.get("duration_ms"), int)
+            )
+        elif case.name == "display-stats":
+            result = payload.get("result") or {}
+            entries = result.get("entries") or []
+            meta = payload.get("meta") or {}
+            ok = (
+                code == 0
+                and payload.get("ok") is True
+                and payload.get("id") == "display-stats-1"
+                and isinstance(entries, list)
+                and any(
+                    entry.get("label") == "Average Damage"
+                    for entry in entries
+                    if isinstance(entry, dict)
+                )
+                and meta.get("request_id") == "display-stats-1"
                 and meta.get("api_version") == "v1"
                 and meta.get("engine_version") == expected_engine_version
                 and isinstance(meta.get("duration_ms"), int)
