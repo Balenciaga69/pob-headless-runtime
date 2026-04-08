@@ -34,7 +34,7 @@ function M.fromArg0(arg0)
         entryDir = pathUtil.join(luaDir, "entry"),
         runtimeModuleDir = pathUtil.join(luaDir, "runtime"),
         compatibilityDir = pathUtil.join(luaDir, "compatibility"),
-        currentWorkDir = sourceDir
+        currentWorkDir = sourceDir,
     }
 end
 

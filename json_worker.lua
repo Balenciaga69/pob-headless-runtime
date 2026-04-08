@@ -32,7 +32,7 @@ end
 bootstrapLocalLuaPath()
 
 local argv = {
-    [0] = arg and arg[0]
+    [0] = arg and arg[0],
 }
 for index = 1, select("#", ...) do
     argv[index] = select(index, ...)
@@ -72,13 +72,21 @@ local transport = require("transport.json_stdio")
 local responseOptions = {
     api_version = "v1",
     engine_version = readManifestVersion(context.repoRoot, context.pathSeparator),
-    started_at = os.clock()
+    started_at = os.clock(),
 }
 local request, requestErr = transport.readRequest()
 
 if not request then
-    local payload = transport.encodeResponse(transportError.response(nil, requestErr.code, requestErr.message,
-        requestErr.retryable, nil, transport.buildMeta(nil, responseOptions)))
+    local payload = transport.encodeResponse(
+        transportError.response(
+            nil,
+            requestErr.code,
+            requestErr.message,
+            requestErr.retryable,
+            nil,
+            transport.buildMeta(nil, responseOptions)
+        )
+    )
     io.write(payload)
     os.exit(1)
 end
@@ -90,12 +98,17 @@ bootstrap.launch(context, callbacks)
 
 local _, settleErr = session:runUntilSettled({
     maxFrames = tonumber(os.getenv("POB_HEADLESS_MAX_FRAMES")) or 200,
-    maxSeconds = tonumber(os.getenv("POB_HEADLESS_MAX_SECONDS")) or 5
+    maxSeconds = tonumber(os.getenv("POB_HEADLESS_MAX_SECONDS")) or 5,
 })
 
 if settleErr then
-    local payload = transport.encodeResponse(transportError.fromUpstream(request.id, settleErr, transport.buildMeta(
-        request.id, responseOptions)))
+    local payload = transport.encodeResponse(
+        transportError.fromUpstream(
+            request.id,
+            settleErr,
+            transport.buildMeta(request.id, responseOptions)
+        )
+    )
     io.write(payload)
     os.exit(1)
 end

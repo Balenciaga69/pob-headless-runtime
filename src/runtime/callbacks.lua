@@ -9,7 +9,7 @@ function M.new()
         callbackTable = {},
         mainObject = nil,
         headlessDone = false,
-        activeDepth = 0
+        activeDepth = 0,
     }
 
     -- Run the main object handler first, then let the headless override replace it if needed.

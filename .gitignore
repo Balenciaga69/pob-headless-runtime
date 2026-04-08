@@ -43,3 +43,5 @@ luac.out
 **/repomix.script.ps1
 **/manual-scripts
 tips
+.tools/
+.vscode/*.code-workspace

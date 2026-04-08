@@ -1,0 +1,9 @@
+{
+  "[lua]": {
+    "editor.defaultFormatter": "johnnymorganz.stylua",
+    "editor.formatOnSave": true
+  },
+  "Lua.runtime.version": "LuaJIT",
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.format.enable": false
+}

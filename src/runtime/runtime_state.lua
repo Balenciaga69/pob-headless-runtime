@@ -3,18 +3,18 @@ local M = {}
 
 -- Read whether the runtime is currently blocked by a prompt.
 function M.getPromptMessage(callbacks)
-	-- Prompt text blocks completion until it is cleared.
-	return callbacks and callbacks.mainObject and callbacks.mainObject.promptMsg or nil
+    -- Prompt text blocks completion until it is cleared.
+    return callbacks and callbacks.mainObject and callbacks.mainObject.promptMsg or nil
 end
 
 -- Decide whether the runtime should stop advancing frames.
 function M.shouldStop(callbacks)
-	-- Stop when the headless flow is done or a blocking prompt is present.
-	if not callbacks then
-		return false
-	end
+    -- Stop when the headless flow is done or a blocking prompt is present.
+    if not callbacks then
+        return false
+    end
 
-	return callbacks.headlessDone or M.getPromptMessage(callbacks) ~= nil
+    return callbacks.headlessDone or M.getPromptMessage(callbacks) ~= nil
 end
 
 return M
