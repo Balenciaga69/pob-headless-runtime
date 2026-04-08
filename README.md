@@ -17,7 +17,7 @@ To work on this project locally you need:
 Expected layout:
 
 ```text
-PathOfBuilding-Headless/
+PathOfBuilding/
 ├─ src/
 ├─ runtime/
 └─ pob-headless-runtime/
@@ -35,8 +35,8 @@ See: [VERSIONING.md](./VERSIONING.md)
 
 The current compatible host repository used for local smoke and runtime testing is:
 
-- `https://github.com/Balenciaga69/PathOfBuilding-Headless.git`
-- branch `Headless0000`
+- `https://github.com/PathOfBuildingCommunity/PathOfBuilding`
+- the upstream default branch used by the official community project
 
 If you use a different PoB fork or branch, editor support may still work, but smoke and runtime tests can fail if the upstream object model differs.
 
@@ -45,14 +45,14 @@ If you use a different PoB fork or branch, editor support may still work, but sm
 ### 1. Clone the compatible host repository
 
 ```powershell
-git clone --branch Headless0000 https://github.com/Balenciaga69/PathOfBuilding-Headless.git
-cd PathOfBuilding-Headless
+git clone https://github.com/PathOfBuildingCommunity/PathOfBuilding.git
+cd PathOfBuilding
 ```
 
 ### 2. Clone this repository into the host repository
 
 ```powershell
-git clone https://github.com/Balenciaga69/pob-headless-runtime.git
+git clone <this-repository-url> pob-headless-runtime
 cd pob-headless-runtime
 ```
 
