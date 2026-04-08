@@ -1,4 +1,4 @@
-local buildGuard = require("api.repo.build_guard")
+local buildGuard = require("api.shared.build_guard")
 local statsCompareUtil = require("util.stats_compare")
 local tableUtil = require("util.table")
 local expect = require("testkit").expect

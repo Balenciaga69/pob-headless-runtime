@@ -1,4 +1,4 @@
-local importServiceModule = require("api.service.import")
+local importServiceModule = require("api.import.orchestrator")
 local expect = require("testkit").expect
 
 local function newService()
@@ -17,23 +17,6 @@ local function newService()
     }
 
     local repos = {
-        importer = {
-            execute_offline_import = function(_, params)
-                calls.offline = calls.offline + 1
-                return {
-                    build = { source = "offline" },
-                    importMode = "offline_payload",
-                    params = params,
-                }
-            end,
-            execute_remote_import = function()
-                calls.remote = calls.remote + 1
-                return {
-                    build = { source = "remote" },
-                    importMode = "remote_import",
-                }
-            end,
-        },
         runtime = {
             rebuild_imported_build = function(_, build)
                 calls.rebuild = calls.rebuild + 1
@@ -59,7 +42,24 @@ local function newService()
         },
     }
 
-    return importServiceModule.new(repos, services), calls, skillsSnapshot
+    local orchestrator = importServiceModule.new(repos, services)
+    orchestrator.execute_offline_import = function(_, params)
+        calls.offline = calls.offline + 1
+        return {
+            build = { source = "offline" },
+            importMode = "offline_payload",
+            params = params,
+        }
+    end
+    orchestrator.execute_remote_import = function()
+        calls.remote = calls.remote + 1
+        return {
+            build = { source = "remote" },
+            importMode = "remote_import",
+        }
+    end
+
+    return orchestrator, calls, skillsSnapshot
 end
 
 do

@@ -1,4 +1,4 @@
-local treeRepoModule = require("api.repo.tree")
+local treeRepoModule = require("api.tree.orchestrator")
 local expect = require("testkit").expect
 
 local function newTreeRepo()
@@ -101,8 +101,9 @@ local function newTreeRepo()
         end
     end
 
-    return treeRepoModule.new(runtime, {
-        pick_fields = function(_, output, fields)
+    return treeRepoModule.new({ runtime = runtime }, {
+        stats = {
+            pick_fields = function(_, output, fields)
             local result = {}
             for _, field in ipairs(fields or {}) do
                 if output[field] ~= nil then
@@ -143,13 +144,16 @@ local function newTreeRepo()
                 },
             }
         end,
-    }),
+        get_default_stat_fields = function()
+            return { "Life", "TotalDPS" }
+        end,
+    } }),
         state
 end
 
 do
     local treeRepo = newTreeRepo()
-    local tree = treeRepo:get_tree_state()
+    local tree = treeRepo:get_tree()
 
     expect(tree ~= nil, "expected get_tree_state to succeed")
     expect(tree.classId == 3, "expected class id")
@@ -159,7 +163,7 @@ end
 
 do
     local treeRepo = newTreeRepo()
-    local node = treeRepo:get_node(400)
+    local node = treeRepo:get_tree_node(400)
 
     expect(node ~= nil, "expected get_node to succeed")
     expect(node.type == "Keystone", "expected keystone type")
@@ -169,7 +173,7 @@ end
 
 do
     local treeRepo = newTreeRepo()
-    local search = treeRepo:search_nodes({
+    local search = treeRepo:search_tree_nodes({
         query = "chaos",
         type = "Keystone",
         limit = 5,
@@ -182,12 +186,12 @@ end
 
 do
     local treeRepo = newTreeRepo()
-    local snapshot = treeRepo:create_snapshot()
+    local snapshot = treeRepo:create_tree_snapshot()
     expect(snapshot ~= nil, "expected create_snapshot to succeed")
     expect(snapshot.kind == "tree_snapshot", "expected snapshot kind")
     expect(snapshot.tree.counts.allocatedNodes == 2, "expected tree data inside snapshot")
 
-    local restored = treeRepo:restore_snapshot(snapshot)
+    local restored = treeRepo:restore_tree_snapshot(snapshot)
     expect(restored ~= nil, "expected restore_snapshot to succeed")
     expect(restored.restored == true, "expected restored flag")
     expect(restored.tree.counts.allocatedNodes == 2, "expected restored node count")
@@ -199,7 +203,7 @@ end
 
 do
     local treeRepo = newTreeRepo()
-    local result = treeRepo:simulate_delta({
+    local result = treeRepo:simulate_node_delta({
         addNodes = { 300, 400 },
         removeNodes = { 200 },
         classId = 6,
@@ -240,7 +244,7 @@ end
 
 do
     local treeRepo = newTreeRepo()
-    local result, err = treeRepo:simulate_delta("bad params")
+    local result, err = treeRepo:simulate_node_delta("bad params")
     expect(result == nil, "expected invalid params to fail")
     expect(err == "node delta params must be a table", "expected params validation error")
 end

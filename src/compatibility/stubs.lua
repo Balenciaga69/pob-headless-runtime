@@ -2,7 +2,7 @@
 local contextModule = require("entry.context")
 local pathUtil = require("util.path")
 local tableUtil = require("util.table")
-local pobCode = require("api.repo.pob_code")
+local pobCode = require("api.build.helpers.code")
 
 local M = {}
 

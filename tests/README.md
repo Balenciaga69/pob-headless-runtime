@@ -35,6 +35,6 @@ python tests\run_transport_smoke.py
 
 Implementation notes:
 
-- `src/api/repo/build_guard.lua` now owns repo-facing build readiness checks
-- `src/api/repo/pob_code.lua` now owns PoB share-code encoding and decoding helpers
+- `src/api/shared/build_guard.lua` now owns repo-facing build readiness checks
+- `src/api/build/helpers/code.lua` now owns PoB share-code encoding and decoding helpers
 - `src/runtime/runtime_state.lua` now owns runtime stop and prompt lifecycle helpers

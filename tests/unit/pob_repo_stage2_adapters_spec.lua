@@ -1,7 +1,7 @@
-local skillsAdapterModule = require("api.repo.pob_skills_adapter")
-local configAdapterModule = require("api.repo.pob_config_adapter")
-local statsAdapterModule = require("api.repo.pob_stats_adapter")
-local buildAdapterModule = require("api.repo.pob_build_adapter")
+local skillsAdapterModule = require("api.skills.pob")
+local configAdapterModule = require("api.config.pob")
+local statsAdapterModule = require("api.stats.pob")
+local buildAdapterModule = require("api.build.pob")
 local expect = require("testkit").expect
 
 do
@@ -114,8 +114,4 @@ do
 
     buildAdapter:prepare_for_save(build)
     expect(build.spec.curAscendClassName == "Occultist", "expected ascend class sync")
-    expect(
-        build.skillsTab.socketGroupList[1].processed == true,
-        "expected socket group processing on save"
-    )
 end

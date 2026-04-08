@@ -140,6 +140,30 @@ Run the extended test suite:
 .\scripts\test.ps1 -Experimental
 ```
 
+## API Structure
+
+`src/api` is organized by feature first.
+
+Newer feature layout:
+
+- `api.lua`: thin entry methods
+- `orchestrator.lua`: flow coordination and runtime guarantees
+- `pob.lua`: direct PoB object interaction
+- `helpers/`: pure helper modules
+
+Current features on the newer layout:
+
+- `build`
+- `config`
+- `import`
+- `items`
+- `skills`
+- `stats`
+- `tree`
+
+All API features now use the same internal pattern.
+Do not re-introduce `repo.lua`, `service.lua`, or `pob_adapter.lua` into `src/api/<feature>/`.
+
 ## Pull Request Expectations
 
 Before opening a pull request:
@@ -149,7 +173,7 @@ Before opening a pull request:
 3. Run tests.
 4. Make sure your change still works inside a compatible PoB host layout.
 
-CI validates the same baseline. If CI fails because the compatible host repository changed, update the workflow or the documented host pin deliberately. Do not hand-wave that mismatch away.
+There is no active GitHub Actions workflow at the moment, so the local scripts are the source of truth for validation.
 
 ## What Is Feasible and What Is Not
 
@@ -157,7 +181,7 @@ CI validates the same baseline. If CI fails because the compatible host reposito
 
 - repo-owned formatter, linter, LSP, and PowerShell scripts
 - novice-friendly setup for Windows contributors
-- CI enforcement of style and tests
+- a future lightweight CI once the host dependency is reduced
 - a predictable "fork and start working" path for contributors using AI tools
 
 ### Not Feasible Without Extra Context
@@ -165,6 +189,7 @@ CI validates the same baseline. If CI fails because the compatible host reposito
 - standalone runtime execution without a compatible PoB host repository
 - stable smoke tests against arbitrary upstream PoB branches
 - assuming global Windows package managers will install every Lua tool reliably without fallbacks
+- a useful GitHub Actions setup without first reducing the host repository dependency footprint
 
 ## Troubleshooting
 
@@ -188,7 +213,6 @@ Run `.\scripts\bootstrap.ps1` again. The local tools live under `.tools/` and ar
 
 If you change the compatible host repository or branch:
 
-1. update the CI workflow
-2. update `README.md`
-3. update this file
-4. verify the full test suite again
+1. update `README.md`
+2. update this file
+3. verify the full test suite again

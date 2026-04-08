@@ -23,7 +23,7 @@ PathOfBuilding-Headless/
 └─ pob-headless-runtime/
 ```
 
-The current compatible host repository used by CI is:
+The current compatible host repository used for local smoke and runtime testing is:
 
 - `https://github.com/Balenciaga69/PathOfBuilding-Headless.git`
 - branch `Headless0000`
@@ -68,7 +68,7 @@ Typical contributor flow:
 2. Open the repository in VS Code.
 3. Edit Lua files with format-on-save enabled.
 4. Run lint and tests before opening a pull request.
-5. Let CI enforce the same checks again.
+5. Keep the host layout intact so runtime tests can resolve upstream files.
 
 Common commands:
 
@@ -107,6 +107,20 @@ Important rule:
 - `src/`: runtime implementation
 - `tests/`: unit, smoke, fixtures, and transport tests
 
+Current `src/api/` layout:
+
+- `build/`, `config/`, `import/`, `items/`, `skills/`, `stats/`, `tree/`: feature modules using `api.lua`, `orchestrator.lua`, `pob.lua`, and optional `helpers/`
+- `runtime/`: shared runtime gateway used by feature orchestrators and services
+- `shared/`: cross-feature utilities that do not belong to a single feature
+- `wiring.lua`: dependency assembly for repos and services/orchestrators
+
+Feature responsibility rules:
+
+- `api.lua`: thin entry layer for the feature
+- `orchestrator.lua`: flow control, runtime guarantees, snapshot/restore, and cross-feature coordination
+- `pob.lua`: direct PoB object access only
+- `helpers/`: pure helpers with no session orchestration
+
 ## Testing
 
 The current test setup already exists and is part of the project design:
@@ -117,18 +131,6 @@ The current test setup already exists and is part of the project design:
 
 This is why the repository does not currently require `busted` for normal contributor setup. The project already owns a compatible test flow around `luajit` and Python wrappers.
 
-## CI
-
-CI is enabled for:
-
-- format check
-- lint
-- unit tests
-- stable smoke tests
-- JSON transport smoke tests
-
-Because this repository depends on a compatible PoB host layout, CI first checks out the matching host repository and then places this repository inside that layout before running validation.
-
 ## Feasibility Notes
 
 The proposed SOP is feasible, but two details matter in practice:
@@ -138,6 +140,9 @@ The proposed SOP is feasible, but two details matter in practice:
 
 2. Windows tooling needs version pinning and fallbacks.
    A naive "install LuaRocks and run `luarocks install luacheck`" flow is fragile on Windows. This repository now uses a repo-local LuaRocks environment with pinned helper repositories so that first-time contributors are less likely to get blocked.
+
+3. There is no GitHub Actions CI at the moment.
+   Validation is meant to run locally through the provided scripts until a lightweight, maintainable workflow is added.
 
 ## Public API Overview
 

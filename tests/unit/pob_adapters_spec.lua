@@ -1,6 +1,6 @@
-local itemsAdapterModule = require("api.repo.pob_items_adapter")
-local importAdapterModule = require("api.repo.pob_import_adapter")
-local treeAdapterModule = require("api.repo.pob_tree_adapter")
+local itemsAdapterModule = require("api.items.pob")
+local importAdapterModule = require("api.import.pob")
+local treeAdapterModule = require("api.tree.pob")
 local expect = require("testkit").expect
 
 do
