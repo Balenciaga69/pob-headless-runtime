@@ -4,7 +4,7 @@ local repoModule = require("api.repo")
 local serviceModule = require("api.service")
 local accessUtil = require("util.access")
 local fileUtil = require("util.file")
-local runtimeStateUtil = require("util.runtime_state")
+local runtimeStateUtil = require("runtime.runtime_state")
 local legacyAdapter = require("runtime.session.legacy_adapter")
 
 local M = {}

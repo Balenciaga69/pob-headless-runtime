@@ -149,7 +149,6 @@ local function base64_decode(data)
 	local out = {}
 	for index = 1, #data, 4 do
 		local c1, c2, c3, c4 = data:byte(index, index + 3)
-		local ch1, ch2 = string.char(c1), string.char(c2)
 		local v1 = BASE64_DECODE[c1]
 		local v2 = BASE64_DECODE[c2]
 		if not v1 or not v2 then

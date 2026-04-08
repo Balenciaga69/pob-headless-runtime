@@ -10,7 +10,7 @@ local function hasRequiredTabs(build, requiredTabs)
 	return true
 end
 
--- Centralize the common build/tab checks used by API facades.
+-- Centralize the common build/tab checks used by repo adapters.
 function M.getBuildWithTabs(session, requiredTabs, errorMessage)
 	local build = session:getBuild()
 	if not build then
@@ -22,7 +22,7 @@ function M.getBuildWithTabs(session, requiredTabs, errorMessage)
 	return build
 end
 
--- Keep the facade readable by moving the build lookup into a callback wrapper.
+-- Keep repo callers readable by moving the build lookup into a callback wrapper.
 function M.withBuild(session, requiredTabs, errorMessage, callback)
 	local build, err = M.getBuildWithTabs(session, requiredTabs, errorMessage)
 	if not build then
