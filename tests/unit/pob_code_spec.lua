@@ -1,4 +1,4 @@
-local pobCode = require("api.repo.pob_code")
+local pobCode = require("api.build.helpers.code")
 local expect = require("testkit").expect
 
 do

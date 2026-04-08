@@ -1,0 +1,262 @@
+-- Item orchestrator that coordinates parse, simulate, compare, and equip flows.
+local compareFields = require("api.items.helpers.compare_fields")
+local parser = require("api.items.helpers.parser")
+local slotResolver = require("api.items.helpers.slot_resolver")
+local tooltipCollector = require("api.items.helpers.tooltip_collector")
+local itemsPob = require("api.items.pob")
+local simulationUtil = require("util.simulation")
+local statsCompareUtil = require("util.stats_compare")
+local tableUtil = require("util.table")
+
+local M = {}
+M.__index = M
+
+function M.new(repos, services)
+    return setmetatable({
+        runtime = repos.runtime,
+        stats = services.stats,
+        pob = itemsPob.new(),
+    }, M)
+end
+
+function M:parse_item(itemText)
+    local build, err = self.runtime:ensure_build_ready({ "itemsTab" }, "items not initialized")
+    if not build then
+        return nil, err
+    end
+    local item, parseErr = parser.parseItemForBuild(build, itemText)
+    if not item then
+        return nil, parseErr
+    end
+    return parser.summarizeItem(item)
+end
+
+function M:render_item_tooltip(itemText, requestedSlot)
+    local build, err = self.runtime:ensure_build_ready({ "itemsTab" }, "items not initialized")
+    if not build then
+        return nil, err
+    end
+
+    local item, parseErr = parser.parseItemForBuild(build, itemText)
+    if not item then
+        return nil, parseErr
+    end
+
+    local normalizedSlot, slotErr = slotResolver.normalizeRequestedSlot(requestedSlot)
+    if slotErr then
+        return nil, slotErr
+    end
+
+    local collector = tooltipCollector.new()
+    local slotName, slot = slotResolver.resolveSlot(build, item, normalizedSlot)
+    if not slotName then
+        if normalizedSlot ~= nil then
+            return nil, slot
+        end
+        slot = nil
+    end
+
+    local ok, tooltipErr = self.pob:render_tooltip(build, collector, item, slot)
+    if not ok then
+        return nil, "failed to render item tooltip: " .. tostring(tooltipErr)
+    end
+
+    local plainLines = {}
+    for _, line in ipairs(collector.lines) do
+        plainLines[#plainLines + 1] = line.plainText
+    end
+
+    return {
+        item = parser.summarizeItem(item),
+        slot = slotResolver.summarizeSlot(slotName, slot, normalizedSlot),
+        lines = collector.lines,
+        plainLines = plainLines,
+        separatorCount = collector.separators,
+        text = table.concat(plainLines, "\n"),
+    }
+end
+
+function M:simulate_outputs(itemText, requestedSlot)
+    local build, err =
+        self.runtime:ensure_build_ready({ "itemsTab", "calcsTab" }, "items not initialized")
+    if not build then
+        return nil, err
+    end
+
+    local item, parseErr = parser.parseItemForBuild(build, itemText)
+    if not item then
+        return nil, parseErr
+    end
+
+    local normalizedSlot, slotErr = slotResolver.normalizeRequestedSlot(requestedSlot)
+    if slotErr then
+        return nil, slotErr
+    end
+
+    local slotName, slot = slotResolver.resolveSlot(build, item, normalizedSlot)
+    if not slotName then
+        return nil, slot
+    end
+
+    local calcFunc, baseOutput = self.pob:get_misc_calculator(build)
+    local newOutput = calcFunc({
+        repSlotName = slotName,
+        repItem = item,
+    })
+    local _, equippedItem = self.pob:get_item_by_slot(build, slotName)
+
+    return {
+        build = build,
+        item = item,
+        itemSummary = parser.summarizeItem(item),
+        slotName = slotName,
+        slot = slot,
+        slotSummary = slotResolver.summarizeSlot(slotName, slot, normalizedSlot),
+        requestedSlot = normalizedSlot,
+        baseOutput = baseOutput,
+        newOutput = newOutput,
+        equippedItem = equippedItem,
+        equippedItemSummary = parser.summarizeItem(equippedItem),
+    }
+end
+
+function M:test_item(itemText, slot)
+    local simulation, err = self:simulate_outputs(itemText, slot)
+    if not simulation then
+        return nil, err
+    end
+    return {
+        slot = simulation.slotSummary,
+        currentItem = simulation.equippedItemSummary,
+        testedItem = simulation.itemSummary,
+        compareFields = tableUtil.copyArray(compareFields),
+        stats = self.stats:pick_fields(simulation.newOutput, compareFields),
+        delta = statsCompareUtil.numericDelta(
+            simulation.baseOutput,
+            simulation.newOutput,
+            compareFields
+        ),
+    }
+end
+
+function M:compare_item_stats(itemText, slot, fields)
+    if fields ~= nil and type(fields) ~= "table" then
+        return nil, "fields must be a table"
+    end
+    local simulation, err = self:simulate_outputs(itemText, slot)
+    if not simulation then
+        return nil, err
+    end
+
+    local selectedFields = fields or compareFields
+    local beforeStats = self.stats:pick_fields(simulation.baseOutput, selectedFields)
+    local afterStats = self.stats:pick_fields(simulation.newOutput, selectedFields)
+    beforeStats._meta = self.stats:build_meta(simulation.build)
+    afterStats._meta = self.stats:build_meta(simulation.build)
+
+    local compared, compareErr = self.stats:compare_stats(beforeStats, afterStats, selectedFields)
+    if not compared then
+        return nil, compareErr
+    end
+
+    return simulationUtil.buildResult("item", compared, {
+        restored = true,
+        simulationMode = "calculator",
+        slot = simulation.slotSummary,
+        currentItem = simulation.equippedItemSummary,
+        candidateItem = simulation.itemSummary,
+    })
+end
+
+function M:get_equipped_item(slotName)
+    local build, err = self.runtime:ensure_build_ready({ "itemsTab" }, "items not initialized")
+    if not build then
+        return nil, err
+    end
+    if type(slotName) ~= "string" or slotName == "" then
+        return nil, "invalid item slot"
+    end
+    local slot, equippedItem = self.pob:get_item_by_slot(build, slotName)
+    if not slot then
+        return nil, "invalid item slot"
+    end
+    if not equippedItem then
+        return nil, "no item equipped in slot " .. tostring(slotName)
+    end
+    return {
+        raw = equippedItem.raw or "",
+        item = equippedItem,
+        itemSummary = parser.summarizeItem(equippedItem),
+    }
+end
+
+function M:build_candidate_raw_with_appended_mod(slotName, modLine)
+    local equipped, err = self:get_equipped_item(slotName)
+    if not equipped then
+        return nil, err
+    end
+    return parser.appendModLineToItemRaw(equipped.item, modLine), equipped
+end
+
+function M:simulate_mod(modLine, slot, fields)
+    if type(modLine) ~= "string" or modLine == "" then
+        return nil, "modLine is required"
+    end
+    if type(slot) ~= "string" or slot == "" then
+        return nil, "slot is required"
+    end
+    if fields ~= nil and type(fields) ~= "table" then
+        return nil, "fields must be a table"
+    end
+    local candidateRaw, equippedOrErr = self:build_candidate_raw_with_appended_mod(slot, modLine)
+    if not candidateRaw then
+        return nil, equippedOrErr
+    end
+    local compared, compareErr = self:compare_item_stats(candidateRaw, slot, fields)
+    if not compared then
+        return nil, compareErr
+    end
+    return simulationUtil.buildResult("mod", compared.comparison, {
+        restored = true,
+        simulationMode = "calculator",
+        slot = compared.slot,
+        currentItem = equippedOrErr.itemSummary or compared.currentItem,
+        candidateItem = compared.candidateItem,
+        modLine = modLine,
+    })
+end
+
+function M:equip_item(itemText, requestedSlot)
+    local build, err =
+        self.runtime:ensure_build_ready({ "itemsTab", "calcsTab" }, "items not initialized")
+    if not build then
+        return nil, err
+    end
+
+    local item, parseErr = parser.parseItemForBuild(build, itemText)
+    if not item then
+        return nil, parseErr
+    end
+
+    local normalizedSlot, slotErr = slotResolver.normalizeRequestedSlot(requestedSlot)
+    if slotErr then
+        return nil, slotErr
+    end
+    local slotName, slot = slotResolver.resolveSlot(build, item, normalizedSlot)
+    if not slotName then
+        return nil, slot
+    end
+
+    local _, previousItem = self.pob:get_item_by_slot(build, slotName)
+    local equippedItem = self.pob:add_and_equip_item(build, item, slot)
+    self.runtime:rebuild_output(build)
+    self.runtime:run_frames_if_idle(1)
+
+    return {
+        slot = slotResolver.summarizeSlot(slotName, slot, normalizedSlot),
+        previousItem = parser.summarizeItem(previousItem),
+        item = parser.summarizeItem(equippedItem),
+    }
+end
+
+return M

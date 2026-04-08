@@ -1,0 +1,16 @@
+return {
+    "TotalDPS",
+    "CombinedDPS",
+    "Life",
+    "EnergyShield",
+    "Mana",
+    "Armour",
+    "Evasion",
+    "FireResist",
+    "ColdResist",
+    "LightningResist",
+    "ChaosResist",
+    "SpellSuppressionChance",
+    "BlockChance",
+    "SpellBlockChance",
+}

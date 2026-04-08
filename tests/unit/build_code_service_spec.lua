@@ -1,5 +1,5 @@
-local buildServiceModule = require("api.service.build")
-local pobCode = require("api.repo.pob_code")
+local buildServiceModule = require("api.build.orchestrator")
+local pobCode = require("api.build.helpers.code")
 local expect = require("testkit").expect
 
 do
@@ -7,26 +7,31 @@ do
     local xmlText = '<PathOfBuilding><Build level="97"></Build></PathOfBuilding>'
     local encoded = pobCode.encode_xml(xmlText)
 
-    local repos = {
-        build = {
-            loadBuildXml = function(session, decodedXml, name)
-                captured.loadSession = session
-                captured.decodedXml = decodedXml
-                captured.name = name
-                return { buildName = name, xmlText = decodedXml }
-            end,
-            saveBuildXml = function(session)
-                captured.saveSession = session
-                return xmlText
-            end,
-        },
+    local session = {
+        ensureMainReady = function()
+            return {
+                SetMode = function(_, _, _, name, decodedXml)
+                    captured.name = name
+                    captured.decodedXml = decodedXml
+                end,
+            }
+        end,
+        runFramesIfIdle = function() end,
+        getBuild = function()
+            captured.loadSession = true
+            return {
+                buildName = "Encoded Build",
+                SaveDB = function()
+                    captured.saveSession = true
+                    return xmlText
+                end,
+            }
+        end,
     }
-    local service = buildServiceModule.new(
-        repos,
-        { importer = { update_imported_build = function() end } },
-        { id = "session" },
-        {}
-    )
+    local service = buildServiceModule.new({}, {
+        importer = { update_imported_build = function() end },
+        skills = { process_socket_groups = function() end },
+    }, session, {})
 
     local build, err = service:load_build_code(encoded, "Encoded Build")
     expect(build ~= nil and err == nil, "expected load_build_code to succeed")
@@ -44,12 +49,10 @@ do
 end
 
 do
-    local service = buildServiceModule.new(
-        { build = {} },
-        { importer = { update_imported_build = function() end } },
-        {},
-        {}
-    )
+    local service = buildServiceModule.new({}, {
+        importer = { update_imported_build = function() end },
+        skills = { process_socket_groups = function() end },
+    }, {}, {})
     local build, err = service:load_build_code(nil, "Broken")
     expect(build == nil, "expected missing code to fail")
     expect(err == "code is required", "expected missing code error")

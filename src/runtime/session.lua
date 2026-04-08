@@ -1,7 +1,6 @@
 -- Runtime session that orchestrates build, callbacks, and services.
 local apiModule = require("api.init")
-local repoModule = require("api.repo")
-local serviceModule = require("api.service")
+local wiringModule = require("api.wiring")
 local accessUtil = require("util.access")
 local sessionLoop = require("runtime.session.loop")
 local sessionStatus = require("runtime.session.status")
@@ -100,8 +99,8 @@ function M.new(context, callbacks)
         executingPendingActions = false,
     }, Session)
 
-    session.repos = repoModule.create(session)
-    session.services = serviceModule.create(session, session.repos)
+    session.repos = wiringModule.createRepos(session)
+    session.services = wiringModule.createServices(session, session.repos)
     session.api = apiModule.create(session)
     return session
 end
