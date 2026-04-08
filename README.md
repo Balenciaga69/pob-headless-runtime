@@ -23,6 +23,15 @@ PathOfBuilding-Headless/
 └─ pob-headless-runtime/
 ```
 
+## Versioning
+
+This project follows a structured versioning policy.
+
+- Current stage: `0.x` (not fully stable)
+- Only stable API is covered by compatibility guarantees
+
+See: [VERSIONING.md](./VERSIONING.md)
+
 The current compatible host repository used for local smoke and runtime testing is:
 
 - `https://github.com/Balenciaga69/PathOfBuilding-Headless.git`

@@ -1,8 +1,40 @@
 -- Build orchestrator handling load and save use cases.
 local pobCode = require("api.build.helpers.code")
+local loadValidation = require("api.build.helpers.load_validation")
+local accessUtil = require("util.access")
 
 local M = {}
 M.__index = M
+
+local function wait_for_loaded_build(session)
+    -- Process the queued mode switch before checking readiness, otherwise the
+    -- previous default build can satisfy the predicate immediately.
+    session:runFramesIfIdle(1)
+
+    local status, err = session:runUntilSettled({
+        maxFrames = 120,
+        maxSeconds = 5,
+        ["until"] = function(runtimeStatus)
+            local main = accessUtil.getMainObjectMain(session.callbacks.mainObject)
+            local build = session:getBuild()
+            local sectionCount = build and build.xmlSectionList and #build.xmlSectionList or 0
+            local modeSwitchPending = main and main.newMode ~= nil
+
+            return not modeSwitchPending
+                and runtimeStatus.buildReady
+                and runtimeStatus.calcsReady
+                and runtimeStatus.outputReady
+                and sectionCount > 0
+        end,
+    })
+    if not status then
+        return nil, err
+    end
+    if status.promptMsg then
+        return nil, status.promptMsg
+    end
+    return session:getBuild()
+end
 
 function M.new(repos, services, session, fileUtil)
     return setmetatable({
@@ -18,17 +50,33 @@ function M:load_build_xml(xmlText, name)
         return nil, "xmlText is required"
     end
 
+    local expectedState, parseErr = loadValidation.parse_expected_build_state(xmlText)
+    if not expectedState then
+        return nil, parseErr
+    end
+
     local main = self.session:ensureMainReady()
     if not main then
         return nil, "main runtime is not ready"
     end
 
     main:SetMode("BUILD", false, name or "API Build", xmlText)
-    self.session:runFramesIfIdle(1)
-    local build = self.session:getBuild()
-    if build then
-        build.buildName = name or build.buildName or "API Build"
+    if self.session:isInsideCallback() then
+        -- Legacy queued smoke scripts call load methods from inside callbacks and
+        -- expect the next frame to complete the mode transition asynchronously.
+        self.session.lastBuildPath = nil
+        return self.session:getBuild()
     end
+
+    local build, loadErr = wait_for_loaded_build(self.session)
+    if not build then
+        return nil, loadErr
+    end
+    build, loadErr = loadValidation.validate_loaded_build(build, expectedState)
+    if not build then
+        return nil, loadErr
+    end
+    build.buildName = name or build.buildName or "API Build"
     self.session.lastBuildPath = nil
     return build
 end
