@@ -1,31 +1,16 @@
 local api = PoBHeadless
+local smokekit = require("smokekit")
 local testkit = require("testkit")
 
-local xmlPath = arg[1]
+local xmlPath = smokekit.requireXmlArg()
 
-if not xmlPath or xmlPath == "" then
-	print("Missing build XML path.")
-	os.exit(1)
-end
-
-local flow = testkit.newQueuedBuildFlow(api, xmlPath)
-
-api.queue(function()
-	if not flow.load() then
-		return false
-	end
-
-	local baselineSummary, ready = flow.summary()
-	if not ready then
-		return false
-	end
-
+smokekit.runQueuedSmoke(api, xmlPath, function(_, baselineSummary)
 	local compared, compareErr = api.compare_config_stats({
 		enemyLevel = 83,
 		enemyIsBoss = "Pinnacle",
 	}, { "Life", "FireResist", "CombinedDPS" })
 	if not compared then
-		error(compareErr, 0)
+		return false, compareErr
 	end
 
 	testkit.expect(type(compared.config) == "table", "config_compare: expected config payload")
@@ -51,7 +36,7 @@ api.queue(function()
 
 	local afterCompareSummary, afterCompareErr = api.get_summary()
 	if not afterCompareSummary then
-		error(afterCompareErr, 0)
+		return false, afterCompareErr
 	end
 	testkit.expectSummaryUnchanged(
 		baselineSummary,
@@ -71,7 +56,5 @@ api.queue(function()
 
 	print("configCompareDPS", testkit.normalizeNumber(compared.delta.CombinedDPS))
 	print("configCompareChanged", #compared.changedFields)
-
-	api.stop()
 	return true
 end)

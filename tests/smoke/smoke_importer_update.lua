@@ -1,39 +1,13 @@
 local api = PoBHeadless
+local smokekit = require("smokekit")
 local testkit = require("testkit")
 
-local function firstExistingPath(paths)
-	for _, path in ipairs(paths) do
-		local handle = io.open(path, "rb")
-		if handle then
-			handle:close()
-			return path
-		end
-	end
-	return paths[1]
-end
-
-local fixtureRoot = firstExistingPath({
-	GetUserPath() .. "/pob-headless-runtime/tests/fixtures/mirage_example_xml.xml",
-	GetUserPath() .. "/custom/pob-headless-runtime/tests/fixtures/mirage_example_xml.xml",
-}):gsub("[/\\][^/\\]+$", "")
-local xmlPath = fixtureRoot .. "/mirage_example_xml.xml"
-local passivePath = fixtureRoot .. "/importer_remote_passive.json"
-local itemsPath = fixtureRoot .. "/importer_remote_items.json"
+local xmlPath = smokekit.resolveFixturePath("mirage_example_xml.xml")
 local accountName = "CodexSmokeAccount"
 local characterName = "CodexSmokeCharacter"
 local accountHash = "422c3d1cc68db6e0068c059001a2fb8fec2f8558"
 local characterHash = "acd8e9c1033d10a6f3f0a2984352cbf621166444"
-
-local function readText(path)
-	local handle, err = io.open(path, "rb")
-	if not handle then
-		error("failed to read fixture: " .. tostring(err), 0)
-	end
-
-	local text = handle:read("*a")
-	handle:close()
-	return text
-end
+local observedCalls = {}
 
 local build, loadErr = api.load_build_file(xmlPath)
 if not build then
@@ -58,9 +32,8 @@ testkit.expect(importTab.controls ~= nil, "importer_update: expected importer co
 testkit.expect(importTab.controls.accountName ~= nil, "importer_update: expected account name control")
 build.treeTab.activeSpec = math.max(1, tonumber(build.treeTab and build.treeTab.activeSpec) or 1)
 
-local passiveJson = readText(passivePath)
-local itemsJson = readText(itemsPath)
-local observedCalls = {}
+local passiveJson = smokekit.readFixture("importer_remote_passive.json")
+local itemsJson = smokekit.readFixture("importer_remote_items.json")
 
 importTab.controls.accountName.buf = accountName
 importTab.lastAccountHash = accountHash
@@ -123,5 +96,3 @@ print("importerMode", result.importMode)
 print("importerLevel", updatedSummary.level or 0)
 print("importerLifeDelta", testkit.summaryStat(updatedSummary, "Life") - testkit.summaryStat(baselineSummary, "Life"))
 print("importerSkill", updatedSummary.mainSkill or "")
-
-api.stop()

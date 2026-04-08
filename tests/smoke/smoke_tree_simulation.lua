@@ -1,34 +1,11 @@
 local api = PoBHeadless
+local smokekit = require("smokekit")
 local testkit = require("testkit")
 
-local xmlPath = arg[1]
-
-if not xmlPath or xmlPath == "" then
-	print("Missing build XML path.")
-	os.exit(1)
-end
-
+local xmlPath = smokekit.requireXmlArg()
 local candidateNodeId
-local flow = testkit.newQueuedBuildFlow(api, xmlPath)
 
-local function asSet(values)
-	local result = {}
-	for _, value in ipairs(values or {}) do
-		result[value] = true
-	end
-	return result
-end
-
-api.queue(function()
-	if not flow.load() then
-		return false
-	end
-
-	local baselineSummary, ready = flow.summary()
-	if not ready then
-		return false
-	end
-
+smokekit.runQueuedSmoke(api, xmlPath, function(flow, baselineSummary)
 	if not candidateNodeId then
 		local loadedBuild = flow.build()
 		testkit.expect(loadedBuild ~= nil, "tree_simulation: expected loaded build handle")
@@ -43,19 +20,19 @@ api.queue(function()
 
 	local tree, treeErr = api.get_tree()
 	if not tree then
-		error(treeErr, 0)
+		return false, treeErr
 	end
 	testkit.expect(type(tree.nodes) == "table" and #tree.nodes > 0, "tree_simulation: expected get_tree nodes payload")
 
 	local snapshot, snapshotErr = api.create_tree_snapshot()
 	if not snapshot then
-		error(snapshotErr, 0)
+		return false, snapshotErr
 	end
 	testkit.expect(snapshot.kind == "tree_snapshot", "tree_simulation: expected explicit tree snapshot")
 
 	local queriedNode, queriedNodeErr = api.get_tree_node(candidateNodeId)
 	if not queriedNode then
-		error(queriedNodeErr, 0)
+		return false, queriedNodeErr
 	end
 	testkit.expect(queriedNode.id == candidateNodeId, "tree_simulation: expected queried tree node id")
 	testkit.expect(queriedNode.allocated == false, "tree_simulation: expected candidate node to be unallocated before simulation")
@@ -68,7 +45,7 @@ api.queue(function()
 		limit = 5,
 	})
 	if not searchResult then
-		error(searchErr, 0)
+		return false, searchErr
 	end
 	testkit.expect(type(searchResult.nodes) == "table" and #searchResult.nodes >= 1, "tree_simulation: expected search results")
 
@@ -78,7 +55,7 @@ api.queue(function()
 		limit = 10,
 	})
 	if not allocatedSearch then
-		error(allocatedSearchErr, 0)
+		return false, allocatedSearchErr
 	end
 	testkit.expect((allocatedSearch.total or 0) >= 1, "tree_simulation: expected allocated notable search results")
 
@@ -90,7 +67,7 @@ api.queue(function()
 		addNodes = { candidateNodeId },
 	}, { "Life", "EnergyShield", "CombinedDPS" })
 	if not simulated then
-		error(simulateErr, 0)
+		return false, simulateErr
 	end
 
 	testkit.expect(simulated.kind == "tree", "tree_simulation: expected tree simulation kind")
@@ -109,7 +86,7 @@ api.queue(function()
 
 	local afterSummary, afterErr = api.get_summary()
 	if not afterSummary then
-		error(afterErr, 0)
+		return false, afterErr
 	end
 	testkit.expect(
 		testkit.normalizeNumber(baselineSummary.stats.Life) == testkit.normalizeNumber(afterSummary.stats.Life),
@@ -122,7 +99,7 @@ api.queue(function()
 
 	local restored, restoreErr = api.restore_tree_snapshot(snapshot)
 	if not restored then
-		error(restoreErr, 0)
+		return false, restoreErr
 	end
 	testkit.expect(restored.restored == true, "tree_simulation: expected explicit restore flag")
 	testkit.expect(#(restored.tree.nodes or {}) == #(tree.nodes or {}), "tree_simulation: expected explicit restore to preserve node count")
@@ -131,7 +108,5 @@ api.queue(function()
 	print("treeDeltaChanged", #simulated.changedFields)
 	print("treeSearchHits", searchResult.total or 0)
 	print("treeAllocatedHits", allocatedSearch.total or 0)
-
-	api.stop()
 	return true
 end)

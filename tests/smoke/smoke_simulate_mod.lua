@@ -1,28 +1,13 @@
 local api = PoBHeadless
+local smokekit = require("smokekit")
 local testkit = require("testkit")
 
-local xmlPath = arg[1]
+local xmlPath = smokekit.requireXmlArg()
 
-if not xmlPath or xmlPath == "" then
-	print("Missing build XML path.")
-	os.exit(1)
-end
-
-local flow = testkit.newQueuedBuildFlow(api, xmlPath)
-
-api.queue(function()
-	if not flow.load() then
-		return false
-	end
-
-	local baselineSummary, ready = flow.summary()
-	if not ready then
-		return false
-	end
-
+smokekit.runQueuedSmoke(api, xmlPath, function(_, baselineSummary)
 	local simulated, simulateErr = api.simulate_mod("+20 to maximum Life", "Ring 1", { "Life", "FireResist", "ColdResist" })
 	if not simulated then
-		error(simulateErr, 0)
+		return false, simulateErr
 	end
 
 	testkit.expect(simulated.modLine == "+20 to maximum Life", "simulate_mod: expected mod line echo")
@@ -47,7 +32,7 @@ api.queue(function()
 
 	local afterSimulateSummary, afterSimulateErr = api.get_summary()
 	if not afterSimulateSummary then
-		error(afterSimulateErr, 0)
+		return false, afterSimulateErr
 	end
 	testkit.expectSummaryUnchanged(
 		baselineSummary,
@@ -70,7 +55,5 @@ api.queue(function()
 
 	print("simulateLife", testkit.normalizeNumber(simulated.delta.Life))
 	print("simulateChanged", #simulated.changedFields)
-
-	api.stop()
 	return true
 end)

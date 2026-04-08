@@ -1,31 +1,17 @@
 local api = PoBHeadless
+local smokekit = require("smokekit")
 local testkit = require("testkit")
 
-local xmlPath = arg[1]
+local xmlPath = smokekit.requireXmlArg()
 
-if not xmlPath or xmlPath == "" then
-	print("Missing build XML path.")
-	os.exit(1)
-end
-
-local flow = testkit.newQueuedBuildFlow(api, xmlPath)
-
-api.queue(function()
-	if not flow.load() then
-		return false
-	end
-
-	local summary, ready = flow.summary()
-	if not ready then
-		return false
-	end
+smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
 
 	local skills, skillsErr = api.list_skills()
 	if not skills then
-		error(skillsErr, 0)
+		return false, skillsErr
 	end
 	if not skills.groups or #skills.groups == 0 then
-		return false
+		return false, "min_api: expected at least one skill group"
 	end
 
 	testkit.expect(type(skills.groups) == "table" and #skills.groups > 0, "min_api: expected at least one skill group")
@@ -33,7 +19,7 @@ api.queue(function()
 
 	local stats, statsErr = api.get_stats({ "Life", "TotalDPS" })
 	if not stats then
-		error(statsErr, 0)
+		return false, statsErr
 	end
 	testkit.expect(stats._meta and stats._meta.mainSkill ~= nil, "min_api: expected main skill meta")
 	testkit.expect(stats.Life ~= nil or stats.TotalDPS ~= nil, "min_api: expected at least one stat value")
@@ -57,7 +43,7 @@ api.queue(function()
 		enemyIsBoss = "Pinnacle",
 	})
 	if configErr then
-		error(configErr, 0)
+		return false, configErr
 	end
 
 	local _, invalidConfigErr = api.set_config({ invalidField = true })
@@ -68,7 +54,7 @@ api.queue(function()
 
 	local xmlText, xmlErr = api.save_build_xml()
 	if not xmlText then
-		error(xmlErr, 0)
+		return false, xmlErr
 	end
 	testkit.expect(#xmlText > 0, "min_api: expected exported xml text")
 
@@ -76,7 +62,5 @@ api.queue(function()
 	print("mainSkill", stats._meta and stats._meta.mainSkill or "")
 	print("skillGroups", #skills.groups)
 	print("xmlSize", #xmlText)
-
-	api.stop()
 	return true
 end)

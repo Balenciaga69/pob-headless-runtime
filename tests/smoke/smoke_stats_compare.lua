@@ -1,12 +1,8 @@
 local api = PoBHeadless
+local smokekit = require("smokekit")
 local testkit = require("testkit")
 
-local xmlPath = arg[1]
-
-if not xmlPath or xmlPath == "" then
-	print("Missing build XML path.")
-	os.exit(1)
-end
+local xmlPath = smokekit.requireXmlArg()
 
 local testItemText = [[
 Rarity: Rare
@@ -20,31 +16,25 @@ Item Level: 86
 +31% to Cold Resistance
 ]]
 
-local flow = testkit.newQueuedBuildFlow(api, xmlPath)
-
-api.queue(function()
-	if not flow.load() then
-		return false
-	end
-
+smokekit.runQueuedSmoke(api, xmlPath, function()
 	local beforeStats, beforeErr = api.get_stats({ "Life", "FireResist", "ColdResist", "EnergyShield", "CombinedDPS" })
 	if not beforeStats then
-		error(beforeErr, 0)
+		return false, beforeErr
 	end
 
 	local _, equipErr = api.equip_item(testItemText, "Ring 1")
 	if equipErr then
-		error(equipErr, 0)
+		return false, equipErr
 	end
 
 	local afterStats, afterErr = api.get_stats({ "Life", "FireResist", "ColdResist", "EnergyShield", "CombinedDPS" })
 	if not afterStats then
-		error(afterErr, 0)
+		return false, afterErr
 	end
 
 	local compared, compareErr = api.compare_stats(beforeStats, afterStats, { "Life", "FireResist", "ColdResist", "CombinedDPS" })
 	if not compared then
-		error(compareErr, 0)
+		return false, compareErr
 	end
 
 	testkit.expect(type(compared.fields) == "table" and #compared.fields == 4, "stats_compare: expected compare fields")
@@ -69,13 +59,13 @@ api.queue(function()
 
 	local autoCompared, autoCompareErr = api.compare_stats(beforeStats, afterStats)
 	if not autoCompared then
-		error(autoCompareErr, 0)
+		return false, autoCompareErr
 	end
 	testkit.expect(type(autoCompared.delta.Life) == "number", "stats_compare: expected auto compare life delta")
 
 	local emptyCompared, emptyCompareErr = api.compare_stats(beforeStats, afterStats, {})
 	if not emptyCompared then
-		error(emptyCompareErr, 0)
+		return false, emptyCompareErr
 	end
 	testkit.expect(type(emptyCompared.delta.Life) == "number", "stats_compare: expected empty-field compare to infer numeric fields")
 
@@ -88,7 +78,5 @@ api.queue(function()
 	print("compareLife", testkit.normalizeNumber(compared.delta.Life))
 	print("compareFire", testkit.normalizeNumber(compared.delta.FireResist))
 	print("compareChanged", #compared.changedFields)
-
-	api.stop()
 	return true
 end)
