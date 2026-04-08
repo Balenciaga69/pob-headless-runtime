@@ -18,19 +18,19 @@ Smoke suites:
 Run smoke tests with:
 
 ```powershell
-python custom\pob-headless-runtime\tests\run_smoke.py --suite stable
+python tests\run_smoke.py --suite stable
 ```
 
 Run unit tests with:
 
 ```powershell
-python custom\pob-headless-runtime\tests\run_unit.py
+python tests\run_unit.py
 ```
 
 Run JSON transport smoke tests with:
 
 ```powershell
-python custom\pob-headless-runtime\tests\run_transport_smoke.py
+python tests\run_transport_smoke.py
 ```
 
 Implementation notes:

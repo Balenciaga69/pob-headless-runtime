@@ -1,6 +1,21 @@
 local api = PoBHeadless
 local testkit = require("testkit")
-local fixtureRoot = GetUserPath() .. "/custom/pob-headless-runtime/tests/fixtures"
+
+local function firstExistingPath(paths)
+	for _, path in ipairs(paths) do
+		local handle = io.open(path, "rb")
+		if handle then
+			handle:close()
+			return path
+		end
+	end
+	return paths[1]
+end
+
+local fixtureRoot = firstExistingPath({
+	GetUserPath() .. "/pob-headless-runtime/tests/fixtures/mirage_example_xml.xml",
+	GetUserPath() .. "/custom/pob-headless-runtime/tests/fixtures/mirage_example_xml.xml",
+}):gsub("[/\\][^/\\]+$", "")
 local xmlPath = fixtureRoot .. "/mirage_example_xml.xml"
 local passivePath = fixtureRoot .. "/importer_remote_passive.json"
 local itemsPath = fixtureRoot .. "/importer_remote_items.json"

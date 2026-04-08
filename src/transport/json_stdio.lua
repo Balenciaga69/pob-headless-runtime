@@ -5,8 +5,13 @@ local dispatchUtil = require("transport.json_stdio.dispatch")
 local M = {}
 
 function M.readRequest(reader)
-	-- Delegate request parsing to the request utility module.
+    -- Delegate request parsing to the request utility module.
     return requestUtil.readRequest(reader)
+end
+
+function M.decodeRequest(input)
+    -- Preserve the older helper name for unit tests and callers.
+    return requestUtil.decodeRequest(input)
 end
 
 function M.encodeResponse(response)

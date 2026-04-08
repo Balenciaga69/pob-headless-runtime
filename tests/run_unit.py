@@ -1,4 +1,4 @@
-"""Run isolated unit tests for custom/pob-headless-runtime."""
+"""Run isolated unit tests for pob-headless-runtime."""
 
 from __future__ import annotations
 
@@ -10,7 +10,8 @@ from pathlib import Path
 
 
 TEST_ROOT = Path(__file__).resolve().parent
-REPO_ROOT = TEST_ROOT.parent.parent.parent
+TOOL_ROOT = TEST_ROOT.parent
+REPO_ROOT = TOOL_ROOT.parent
 UNIT_DIR = TEST_ROOT / "unit"
 RUNNER = TEST_ROOT / "helpers" / "unit_runner.lua"
 

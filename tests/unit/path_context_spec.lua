@@ -28,6 +28,12 @@ do
 end
 
 do
+	local context = entryContextModule.fromArg0("g:/repo/pob_headless_refactor/headless_bridge.lua")
+	expect(context.repoRoot:match("g:[/\\]repo$") ~= nil, "expected repoRoot to work without custom nesting")
+	expect(context.sourceDir:match("g:[/\\]repo[/\\]src$") ~= nil, "expected sourceDir to point at repo src root")
+end
+
+do
 	local originalPath = package.path
 	local fakeDir = pathUtil.join("g:/repo", "custom", "pob_headless_refactor", "src")
 

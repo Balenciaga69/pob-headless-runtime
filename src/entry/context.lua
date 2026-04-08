@@ -11,9 +11,13 @@ function M.fromArg0(arg0)
     -- Use the platform separator consistently for every derived path.
     local pathSeparator = pathUtil.getPathSeparator()
     local toolDir = pathUtil.dirname(wrapperPath)
-    -- Walk upward from the wrapper to recover the custom and repo roots.
-    local customDir = pathUtil.dirname(toolDir)
-    local repoRoot = pathUtil.dirname(customDir)
+    local repoRoot = pathUtil.dirname(toolDir)
+
+    -- Detect the older nested layout and skip the custom layer when it is present.
+    if toolDir:match("[/\\]custom[/\\][^/\\]+$") then
+        repoRoot = pathUtil.dirname(repoRoot)
+    end
+
     -- These directories are the main roots used by the headless runtime.
     local sourceDir = pathUtil.join(repoRoot, "src")
     local runtimeDir = pathUtil.join(repoRoot, "runtime")
@@ -22,7 +26,6 @@ function M.fromArg0(arg0)
     return {
         pathSeparator = pathSeparator,
         toolDir = toolDir,
-        customDir = customDir,
         repoRoot = repoRoot,
         sourceDir = sourceDir,
         runtimeDir = runtimeDir,

@@ -24,6 +24,15 @@ local function prependLuaPath(dir)
 	end
 end
 
+local function pathExists(path)
+	local handle = io.open(path, "rb")
+	if handle then
+		handle:close()
+		return true
+	end
+	return false
+end
+
 local testScript = arg[1]
 if not testScript or testScript == "" then
 	io.stderr:write("Missing unit test script path.\n")
@@ -34,11 +43,16 @@ local runnerPath = (arg and arg[0]) or "unit_runner.lua"
 local helpersDir = dirname(runnerPath)
 local testsDir = dirname(helpersDir)
 local toolRoot = dirname(testsDir)
-local customRoot = dirname(toolRoot)
-local repoRoot = dirname(customRoot)
+local parentRoot = dirname(toolRoot)
+local repoRoot = parentRoot
+
+if not pathExists(repoRoot .. package.config:sub(1, 1) .. "src" .. package.config:sub(1, 1) .. "Launch.lua") then
+	repoRoot = dirname(parentRoot)
+end
 
 prependLuaPath(toolRoot .. package.config:sub(1, 1) .. "src")
 prependLuaPath(helpersDir)
+prependLuaPath(toolRoot .. package.config:sub(1, 1) .. "src" .. package.config:sub(1, 1) .. "compatibility")
 prependLuaPath(repoRoot .. package.config:sub(1, 1) .. "runtime" .. package.config:sub(1, 1) .. "lua")
 
 table.remove(arg, 1)

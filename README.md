@@ -32,7 +32,7 @@ Legacy compatibility entry point:
 `json_worker.lua` is the formal machine-facing entry point for stable automation. It accepts one JSON request on `stdin`, writes one JSON response on `stdout`, and exits.
 
 `headless_bridge.lua` remains available for legacy script-driven workflows and smoke helpers through `POB_HEADLESS_TEST_SCRIPT`, but it is not the preferred external integration path.
-`POB_HEADLESS_TEST_SCRIPT` is internal/debug only and should not be treated as a public integration contract.
+`POB_HEADLESS_TEST_SCRIPT` and `POB_HEADLESS_SCRIPT` are internal/debug only and should not be treated as public integration contracts.
 
 ## What This Project Is
 
@@ -220,7 +220,7 @@ Unit tests focus on:
 
 ## Repository Layout
 
-- `headless_bridge.lua` - runtime bootstrap and session startup
+- `headless_bridge.lua` - legacy runtime bootstrap and session startup
 - `json_worker.lua` - formal JSON stdin/stdout worker entry point
 - `contracts` - machine-readable API contract manifest and examples
 - `docs` - architecture and flow documentation

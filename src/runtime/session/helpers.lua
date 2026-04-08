@@ -6,7 +6,7 @@ local M = {}
 
 function M.loadHeadlessScript(session, argv)
 	-- Load an optional helper script after the runtime has been prepared.
-	local scriptPath = os.getenv("POB_HEADLESS_SCRIPT")
+	local scriptPath = os.getenv("POB_HEADLESS_TEST_SCRIPT")
 	if not scriptPath or scriptPath == "" then
 		return
 	end
