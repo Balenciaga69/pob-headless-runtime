@@ -27,8 +27,9 @@ PathOfBuilding-Headless/
 
 This project follows a structured versioning policy.
 
-- Current stage: `0.x` (not fully stable)
+- Current stage: pre-`1.0.0`, with a maintained stable contract
 - Only stable API is covered by compatibility guarantees
+- New stable capabilities require a `MINOR` version bump during `0.x`
 
 See: [VERSIONING.md](./VERSIONING.md)
 
@@ -165,6 +166,7 @@ Stable API v1 methods:
 - `save_build_file`
 - `get_summary`
 - `get_stats(fields)`
+- `get_display_stats`
 - `equip_item`
 - `list_equipment`
 - `set_config`
@@ -175,6 +177,13 @@ Stable API v1 methods:
 Stable methods live under:
 
 - `session.api.<method>`
+
+Current stable stats behavior:
+
+- `get_summary` returns a compact snapshot for dashboards and load/save flows
+- `get_stats(fields)` returns raw numeric output fields by name
+- `get_display_stats` returns GUI-like display entries derived from PoB's display stat catalog
+- summary and display-stats metadata include calcs skill selection context so downstream UIs can explain which skill / skill part produced the current DPS
 
 Experimental methods live under:
 

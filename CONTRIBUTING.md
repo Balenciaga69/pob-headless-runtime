@@ -132,6 +132,7 @@ Run the default test suite:
 
 ```powershell
 .\scripts\test.ps1
+python .\tests\run_transport_smoke.py
 ```
 
 Run the extended test suite:
@@ -174,6 +175,7 @@ Maintained stable surface:
 
 - build load/save
 - stats reads
+- GUI-like display stats reads
 - direct item equip
 - equipment listing
 - config read/write
@@ -191,8 +193,9 @@ Before opening a pull request:
 
 1. Run formatting.
 2. Run lint.
-3. Run tests.
-4. Make sure your change still works inside a compatible PoB host layout.
+3. Run unit/smoke tests.
+4. Run transport smoke.
+5. Make sure your change still works inside a compatible PoB host layout.
 
 There is no active GitHub Actions workflow at the moment, so the local scripts are the source of truth for validation.
 
@@ -237,3 +240,10 @@ If you change the compatible host repository or branch:
 1. update `README.md`
 2. update this file
 3. verify the full test suite again
+
+If you change the stable API surface:
+
+1. update `contracts/stable_api_v1.json`
+2. update `README.md`
+3. update `VERSIONING.md` if the change affects release classification
+4. update or add transport smoke coverage

@@ -18,12 +18,13 @@ Example:
 
 ## Current Stage
 
-The project is currently in `0.x` stage.
+The project is currently in late `0.x` stage.
 
 This means:
 
 - The project is usable as a dependency
-- The API is **not fully stable**
+- The stable contract is maintained intentionally
+- `1.0.0` has not been declared yet
 - Only the **stable API surface** is covered by compatibility expectations
 
 ---
@@ -42,6 +43,7 @@ Includes:
 
 - build load/save
 - summary / stats
+- detailed display stats
 - equipment operations
 - config read/write
 - runtime + health
@@ -68,6 +70,7 @@ Rules:
 - Bug fixes
 - Internal refactor
 - No change to stable API behavior
+- Documentation-only alignment for existing stable behavior
 
 ---
 
@@ -76,6 +79,7 @@ Rules:
 - Add new stable API capability
 - Behavioral changes that downstream should notice
 - Structural improvements affecting usage
+- Add or change stable response metadata that downstream may consume
 
 ---
 
@@ -98,6 +102,7 @@ Before each release:
 .\scripts\fmt.ps1 -Check
 .\scripts\lint.ps1
 .\scripts\test.ps1
+python .\tests\run_transport_smoke.py
 ```
 
 If experimental code is affected:
@@ -158,4 +163,5 @@ Upgrade to `1.0.0` when:
 - Stable API is finalized
 - Contract is trusted long-term
 - Downstream usage is verified
-- Test coverage is reliable
+- Transport coverage is reliable
+- Release docs and machine-readable contracts stay aligned by default
