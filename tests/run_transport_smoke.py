@@ -1,4 +1,4 @@
-"""Run JSON stdin/stdout worker smoke tests for custom/pob-headless-runtime."""
+"""Run JSON stdin/stdout worker smoke tests for pob-headless-runtime."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from pathlib import Path
 
 TEST_ROOT = Path(__file__).resolve().parent
 TOOL_ROOT = TEST_ROOT.parent
-REPO_ROOT = TOOL_ROOT.parent.parent
+REPO_ROOT = TOOL_ROOT.parent
 WORKER_PATH = TOOL_ROOT / "json_worker.lua"
 DEFAULT_RUNTIME_DIR = REPO_ROOT / "runtime"
 FIXTURE_XML = TEST_ROOT / "fixtures" / "mirage_example_xml.xml"

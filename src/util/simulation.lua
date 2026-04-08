@@ -13,7 +13,7 @@ local RESERVED_KEYS = {
     changedFields = true,
     _meta = true,
     restored = true,
-    simulationMode = true
+    simulationMode = true,
 }
 
 -- Wrap a compare result in a stable simulation envelope while preserving legacy fields.
@@ -28,7 +28,7 @@ function M.buildResult(kind, compared, extras)
         changedFields = compared and compared.changedFields or nil,
         _meta = compared and compared._meta or nil,
         restored = extras and extras.restored == true or false,
-        simulationMode = extras and extras.simulationMode or nil
+        simulationMode = extras and extras.simulationMode or nil,
     }
 
     for key, value in pairs(tableUtil.shallowCopy(extras)) do

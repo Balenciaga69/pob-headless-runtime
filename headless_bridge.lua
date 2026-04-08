@@ -44,7 +44,7 @@ bootstrapLocalLuaPath()
 
 -- Normalize argv so arg and varargs share one table.
 local argv = {
-    [0] = arg and arg[0]
+    [0] = arg and arg[0],
 }
 for index = 1, select("#", ...) do
     argv[index] = select(index, ...)
@@ -71,13 +71,13 @@ bootstrap.launch(context, callbacks)
 -- Install the legacy helper surface expected by older scripts.
 session:installLegacyHelpers()
 
--- Load an optional automation script from POB_HEADLESS_SCRIPT.
+-- Load an optional automation script from POB_HEADLESS_TEST_SCRIPT.
 session:loadHeadlessScript(argv)
 
 -- Drive PoB until it settles, using configurable safety bounds.
 local _, settleErr = session:runUntilSettled({
     maxFrames = tonumber(os.getenv("POB_HEADLESS_MAX_FRAMES")) or 200,
-    maxSeconds = tonumber(os.getenv("POB_HEADLESS_MAX_SECONDS")) or 5
+    maxSeconds = tonumber(os.getenv("POB_HEADLESS_MAX_SECONDS")) or 5,
 })
 
 -- Finalize the build object after the runtime settles.

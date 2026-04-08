@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "runtime.version": "LuaJIT",
+  "workspace.checkThirdParty": false,
+  "workspace.library": [
+    "src",
+    "tests/helpers",
+    "../src",
+    "../runtime/lua"
+  ],
+  "diagnostics.globals": [
+    "main",
+    "launch",
+    "buildMode",
+    "newBuild",
+    "callbacks",
+    "wipeTable",
+    "modLib"
+  ],
+  "format.enable": false,
+  "hint.enable": true,
+  "telemetry.enable": false
+}

@@ -1,82 +1,72 @@
 local api = PoBHeadless
+local smokekit = require("smokekit")
 local testkit = require("testkit")
 
-local xmlPath = arg[1]
+local xmlPath = smokekit.requireXmlArg()
 
-if not xmlPath or xmlPath == "" then
-	print("Missing build XML path.")
-	os.exit(1)
-end
+smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
+    local skills, skillsErr = api.list_skills()
+    if not skills then
+        return false, skillsErr
+    end
+    testkit.expect(
+        skills.groups and #skills.groups > 0,
+        "contract_regression: expected at least one skill group"
+    )
+    testkit.expect(summary.buildName ~= nil, "contract_regression: expected build name in summary")
 
-local flow = testkit.newQueuedBuildFlow(api, xmlPath)
+    local stats, statsErr = api.get_stats({ "Life", "TotalDPS" })
+    if not stats then
+        return false, statsErr
+    end
+    testkit.expect(
+        stats._meta and stats._meta.mainSkill ~= nil,
+        "contract_regression: expected main skill meta"
+    )
+    testkit.expect(
+        stats.Life ~= nil or stats.TotalDPS ~= nil,
+        "contract_regression: expected at least one stat value"
+    )
 
-api.queue(function()
-	if not flow.load() then
-		return false
-	end
+    local firstGroup = skills.groups[1]
+    local firstSkill = firstGroup and firstGroup.skills and firstGroup.skills[1]
+    if firstGroup and firstSkill then
+        local selected, selectErr = api.select_skill({
+            group = firstGroup.index,
+            skill = firstGroup.mainActiveSkill or firstSkill.index or 1,
+        })
+        if not selected then
+            return false, selectErr
+        end
+        testkit.expect(
+            selected.mainSocketGroup == firstGroup.index,
+            "contract_regression: selected group mismatch"
+        )
+    end
 
-	local summary, ready = flow.summary()
-	if not ready then
-		return false
-	end
+    local _, configErr = api.set_config({
+        enemyLevel = 84,
+        enemyIsBoss = "Pinnacle",
+    })
+    if configErr then
+        return false, configErr
+    end
 
-	local skills, skillsErr = api.list_skills()
-	if not skills then
-		error(skillsErr, 0)
-	end
-	if not skills.groups or #skills.groups == 0 then
-		return false
-	end
+    local _, invalidConfigErr = api.set_config({ invalidField = true })
+    testkit.expect(
+        invalidConfigErr ~= nil and invalidConfigErr:match("^unsupported config field:"),
+        "contract_regression: expected unsupported field error"
+    )
 
-	testkit.expect(type(skills.groups) == "table" and #skills.groups > 0, "contract_regression: expected at least one skill group")
-	testkit.expect(summary.buildName ~= nil, "contract_regression: expected build name in summary")
+    local xmlText, xmlErr = api.save_build_xml()
+    if not xmlText then
+        return false, xmlErr
+    end
+    testkit.expect(#xmlText > 0, "contract_regression: expected exported xml text")
 
-	local stats, statsErr = api.get_stats({ "Life", "TotalDPS" })
-	if not stats then
-		error(statsErr, 0)
-	end
-	testkit.expect(stats._meta and stats._meta.mainSkill ~= nil, "contract_regression: expected main skill meta")
-	testkit.expect(stats.Life ~= nil or stats.TotalDPS ~= nil, "contract_regression: expected at least one stat value")
-
-	local firstGroup = skills.groups[1]
-	local firstSkill = firstGroup and firstGroup.skills and firstGroup.skills[1]
-	if firstGroup and firstSkill then
-		local selected, selectErr = api.select_skill({
-			group = firstGroup.index,
-			skill = firstGroup.mainActiveSkill or firstSkill.index or 1,
-		})
-		if not selected then
-			error(selectErr, 0)
-		end
-
-		testkit.expect(selected.mainSocketGroup == firstGroup.index, "contract_regression: selected group mismatch")
-	end
-
-	local _, configErr = api.set_config({
-		enemyLevel = 84,
-		enemyIsBoss = "Pinnacle",
-	})
-	if configErr then
-		error(configErr, 0)
-	end
-
-	local _, invalidConfigErr = api.set_config({ invalidField = true })
-	testkit.expect(
-		invalidConfigErr ~= nil and invalidConfigErr:match("^unsupported config field:"),
-		"contract_regression: expected unsupported field error"
-	)
-
-	local xmlText, xmlErr = api.save_build_xml()
-	if not xmlText then
-		error(xmlErr, 0)
-	end
-	testkit.expect(#xmlText > 0, "contract_regression: expected exported xml text")
-
-	print("buildName", summary.buildName or "")
-	print("mainSkill", stats._meta and stats._meta.mainSkill or "")
-	print("skillGroups", #skills.groups)
-	print("xmlSize", #xmlText)
-
-	api.stop()
-	return true
+    print("buildName", summary.buildName or "")
+    print("mainSkill", stats._meta and stats._meta.mainSkill or "")
+    print("skillGroups", #skills.groups)
+    print("xmlSize", #xmlText)
+    return true
 end)

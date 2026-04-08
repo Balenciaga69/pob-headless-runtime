@@ -1,4 +1,4 @@
-"""Run headless smoke tests in custom/pob-headless-runtime/tests/smoke."""
+"""Run headless smoke tests in pob-headless-runtime/tests/smoke."""
 
 from __future__ import annotations
 
@@ -11,9 +11,10 @@ from pathlib import Path
 
 
 TEST_ROOT = Path(__file__).resolve().parent
-REPO_ROOT = TEST_ROOT.parent.parent.parent
-POB_LUA_PATH = REPO_ROOT / "custom" / "pob-headless-runtime" / "headless_bridge.lua"
-DEFAULT_FIXTURE = REPO_ROOT / "custom" / "pob-headless-runtime" / "tests" / "fixtures" / "mirage_example_xml.xml"
+TOOL_ROOT = TEST_ROOT.parent
+REPO_ROOT = TOOL_ROOT.parent
+POB_LUA_PATH = TOOL_ROOT / "headless_bridge.lua"
+DEFAULT_FIXTURE = TEST_ROOT / "fixtures" / "mirage_example_xml.xml"
 DEFAULT_RUNTIME_DIR = REPO_ROOT / "runtime"
 SMOKE_DIR = TEST_ROOT / "smoke"
 
@@ -47,7 +48,7 @@ class SmokeResult:
 
 def _build_env(script_path: Path) -> dict[str, str]:
     env = os.environ.copy()
-    env["POB_HEADLESS_SCRIPT"] = str(script_path)
+    env["POB_HEADLESS_TEST_SCRIPT"] = str(script_path)
     env["PATH"] = str(DEFAULT_RUNTIME_DIR) + os.pathsep + env.get("PATH", "")
     return env
 

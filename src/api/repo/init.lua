@@ -11,20 +11,20 @@ local configRepo = require("api.repo.config")
 local M = {}
 
 function M.create(session)
-	local runtime = buildRuntimeRepo.new(session)
-	local stats = statsRepo.new(runtime)
-	local skills = skillsRepo.new(runtime)
+    local runtime = buildRuntimeRepo.new(session)
+    local stats = statsRepo.new(runtime)
+    local skills = skillsRepo.new(runtime)
 
-	return {
-		runtime = runtime,
-		build = buildRepo,
-		stats = stats,
-		skills = skills,
-		tree = treeRepo.new(runtime, stats),
-		items = itemsRepo.new(runtime),
-		importer = importRepo.new(runtime),
-		config = configRepo.new(runtime),
-	}
+    return {
+        runtime = runtime,
+        build = buildRepo,
+        stats = stats,
+        skills = skills,
+        tree = treeRepo.new(runtime, stats),
+        items = itemsRepo.new(runtime),
+        importer = importRepo.new(runtime),
+        config = configRepo.new(runtime),
+    }
 end
 
 return M

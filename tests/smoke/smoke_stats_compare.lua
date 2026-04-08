@@ -1,12 +1,8 @@
 local api = PoBHeadless
+local smokekit = require("smokekit")
 local testkit = require("testkit")
 
-local xmlPath = arg[1]
-
-if not xmlPath or xmlPath == "" then
-	print("Missing build XML path.")
-	os.exit(1)
-end
+local xmlPath = smokekit.requireXmlArg()
 
 local testItemText = [[
 Rarity: Rare
@@ -20,75 +16,94 @@ Item Level: 86
 +31% to Cold Resistance
 ]]
 
-local flow = testkit.newQueuedBuildFlow(api, xmlPath)
+smokekit.runQueuedSmoke(api, xmlPath, function()
+    local beforeStats, beforeErr =
+        api.get_stats({ "Life", "FireResist", "ColdResist", "EnergyShield", "CombinedDPS" })
+    if not beforeStats then
+        return false, beforeErr
+    end
 
-api.queue(function()
-	if not flow.load() then
-		return false
-	end
+    local _, equipErr = api.equip_item(testItemText, "Ring 1")
+    if equipErr then
+        return false, equipErr
+    end
 
-	local beforeStats, beforeErr = api.get_stats({ "Life", "FireResist", "ColdResist", "EnergyShield", "CombinedDPS" })
-	if not beforeStats then
-		error(beforeErr, 0)
-	end
+    local afterStats, afterErr =
+        api.get_stats({ "Life", "FireResist", "ColdResist", "EnergyShield", "CombinedDPS" })
+    if not afterStats then
+        return false, afterErr
+    end
 
-	local _, equipErr = api.equip_item(testItemText, "Ring 1")
-	if equipErr then
-		error(equipErr, 0)
-	end
+    local compared, compareErr = api.compare_stats(
+        beforeStats,
+        afterStats,
+        { "Life", "FireResist", "ColdResist", "CombinedDPS" }
+    )
+    if not compared then
+        return false, compareErr
+    end
 
-	local afterStats, afterErr = api.get_stats({ "Life", "FireResist", "ColdResist", "EnergyShield", "CombinedDPS" })
-	if not afterStats then
-		error(afterErr, 0)
-	end
+    testkit.expect(
+        type(compared.fields) == "table" and #compared.fields == 4,
+        "stats_compare: expected compare fields"
+    )
+    testkit.expect(type(compared.before) == "table", "stats_compare: expected before stats table")
+    testkit.expect(type(compared.after) == "table", "stats_compare: expected after stats table")
+    testkit.expect(type(compared.delta) == "table", "stats_compare: expected delta stats table")
+    testkit.expect(
+        type(compared.changedFields) == "table",
+        "stats_compare: expected changed fields"
+    )
+    testkit.expect(
+        compared._meta and compared._meta.before and compared._meta.after,
+        "stats_compare: expected compare meta"
+    )
 
-	local compared, compareErr = api.compare_stats(beforeStats, afterStats, { "Life", "FireResist", "ColdResist", "CombinedDPS" })
-	if not compared then
-		error(compareErr, 0)
-	end
+    testkit.expectDeltaMatches(
+        compared.before,
+        compared.after,
+        compared.delta,
+        { "Life", "FireResist", "ColdResist", "CombinedDPS" },
+        "stats_compare"
+    )
 
-	testkit.expect(type(compared.fields) == "table" and #compared.fields == 4, "stats_compare: expected compare fields")
-	testkit.expect(type(compared.before) == "table", "stats_compare: expected before stats table")
-	testkit.expect(type(compared.after) == "table", "stats_compare: expected after stats table")
-	testkit.expect(type(compared.delta) == "table", "stats_compare: expected delta stats table")
-	testkit.expect(type(compared.changedFields) == "table", "stats_compare: expected changed fields")
-	testkit.expect(compared._meta and compared._meta.before and compared._meta.after, "stats_compare: expected compare meta")
+    testkit.expect(
+        compared.changedFields[1] == "Life" or #compared.changedFields >= 1,
+        "stats_compare: expected at least one changed field"
+    )
 
-	testkit.expectDeltaMatches(
-		compared.before,
-		compared.after,
-		compared.delta,
-		{ "Life", "FireResist", "ColdResist", "CombinedDPS" },
-		"stats_compare"
-	)
+    local autoCompared, autoCompareErr = api.compare_stats(beforeStats, afterStats)
+    if not autoCompared then
+        return false, autoCompareErr
+    end
+    testkit.expect(
+        type(autoCompared.delta.Life) == "number",
+        "stats_compare: expected auto compare life delta"
+    )
 
-	testkit.expect(
-		compared.changedFields[1] == "Life" or #compared.changedFields >= 1,
-		"stats_compare: expected at least one changed field"
-	)
+    local emptyCompared, emptyCompareErr = api.compare_stats(beforeStats, afterStats, {})
+    if not emptyCompared then
+        return false, emptyCompareErr
+    end
+    testkit.expect(
+        type(emptyCompared.delta.Life) == "number",
+        "stats_compare: expected empty-field compare to infer numeric fields"
+    )
 
-	local autoCompared, autoCompareErr = api.compare_stats(beforeStats, afterStats)
-	if not autoCompared then
-		error(autoCompareErr, 0)
-	end
-	testkit.expect(type(autoCompared.delta.Life) == "number", "stats_compare: expected auto compare life delta")
+    local _, invalidBeforeErr = api.compare_stats(nil, afterStats, { "Life" })
+    testkit.expect(
+        invalidBeforeErr == "before stats must be a table",
+        "stats_compare: expected invalid before stats error"
+    )
 
-	local emptyCompared, emptyCompareErr = api.compare_stats(beforeStats, afterStats, {})
-	if not emptyCompared then
-		error(emptyCompareErr, 0)
-	end
-	testkit.expect(type(emptyCompared.delta.Life) == "number", "stats_compare: expected empty-field compare to infer numeric fields")
+    local _, invalidFieldsErr = api.compare_stats(beforeStats, afterStats, "Life")
+    testkit.expect(
+        invalidFieldsErr == "fields must be a table",
+        "stats_compare: expected invalid fields error"
+    )
 
-	local _, invalidBeforeErr = api.compare_stats(nil, afterStats, { "Life" })
-	testkit.expect(invalidBeforeErr == "before stats must be a table", "stats_compare: expected invalid before stats error")
-
-	local _, invalidFieldsErr = api.compare_stats(beforeStats, afterStats, "Life")
-	testkit.expect(invalidFieldsErr == "fields must be a table", "stats_compare: expected invalid fields error")
-
-	print("compareLife", testkit.normalizeNumber(compared.delta.Life))
-	print("compareFire", testkit.normalizeNumber(compared.delta.FireResist))
-	print("compareChanged", #compared.changedFields)
-
-	api.stop()
-	return true
+    print("compareLife", testkit.normalizeNumber(compared.delta.Life))
+    print("compareFire", testkit.normalizeNumber(compared.delta.FireResist))
+    print("compareChanged", #compared.changedFields)
+    return true
 end)

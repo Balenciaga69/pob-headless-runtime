@@ -1,74 +1,147 @@
 # pob-headless-runtime
 
-`pob-headless-runtime` is a headless automation and integration layer for Path of Building. It exposes PoB runtime capabilities through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without a GUI.
+`pob-headless-runtime` is a headless automation layer for Path of Building. It exposes PoB runtime behavior through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without the GUI.
 
-## Requirements
+This repository is not a standalone PoB fork. It is meant to live inside a compatible Path of Building repository layout.
 
-This project is designed to run inside a PoB-compatible Lua runtime and depends on the upstream Path of Building codebase.
+## What You Need
 
-Required environment:
+To work on this project locally you need:
 
-- `Path of Building` source/runtime available in the expected repository layout
-- `LuaJIT` runtime
-- `LuaJIT FFI` support
-- Python 3 if you want to run the test runners
+- Windows
+- `git`
+- `Python 3.11+`
+- `LuaJIT`
+- a compatible Path of Building host repository checked out as the parent folder
 
-Practical notes:
+Expected layout:
 
-- PoB share-code compression/decompression uses `LuaJIT FFI`
-- GUI-only features are stubbed or reported as unavailable in headless mode
-- The bridge expects to be launched from within the PoB project layout, not as a standalone pure-Lua package
+```text
+PathOfBuilding-Headless/
+├─ src/
+├─ runtime/
+└─ pob-headless-runtime/
+```
 
-## Entry Points
+The current compatible host repository used by CI is:
 
-Recommended machine-facing entry point:
+- `https://github.com/Balenciaga69/PathOfBuilding-Headless.git`
+- branch `Headless0000`
 
-- [`json_worker.lua`](json_worker.lua)
-
-Legacy compatibility entry point:
-
-- [`headless_bridge.lua`](headless_bridge.lua)
-
-`json_worker.lua` is the formal machine-facing entry point for stable automation. It accepts one JSON request on `stdin`, writes one JSON response on `stdout`, and exits.
-
-`headless_bridge.lua` remains available for legacy script-driven workflows and smoke helpers through `POB_HEADLESS_SCRIPT`, but it is not the preferred external integration path.
-
-## What This Project Is
-
-This is not a rewrite of the PoB calculator. It is an integration layer that keeps upstream PoB behavior intact while making it callable from scripts and automation.
-
-The architecture follows a three-layer model:
-
-- `repo` for direct access to PoB runtime objects
-- `service` for business logic and orchestration
-- `api` for the public surface exposed to callers
-
-Implementation detail:
-
-- repo-facing build guard and PoB share-code codec helpers live under `src/api/repo/`
-- runtime lifecycle state helpers live under `src/runtime/`
-
-## Key Features
-
-- Load builds from XML text or PoB share code
-- Query summaries and selected stats
-- Compare candidate items against the current build
-- Simulate passive tree deltas and mastery changes
-- Inspect runtime state in headless mode
+If you use a different PoB fork or branch, editor support may still work, but smoke and runtime tests can fail if the upstream object model differs.
 
 ## Quick Start
 
-If you want to integrate this project into another tool, use `json_worker.lua`.
+### 1. Clone the compatible host repository
 
-If you want a formal machine-facing transport, launch `json_worker.lua`, send one JSON request through `stdin`, read one JSON response from `stdout`, then exit the process.
+```powershell
+git clone --branch Headless0000 https://github.com/Balenciaga69/PathOfBuilding-Headless.git
+cd PathOfBuilding-Headless
+```
 
-Use `headless_bridge.lua` only for legacy script-driven flows that still depend on `POB_HEADLESS_SCRIPT`.
+### 2. Clone this repository into the host repository
+
+```powershell
+git clone https://github.com/Balenciaga69/pob-headless-runtime.git
+cd pob-headless-runtime
+```
+
+### 3. Bootstrap the local development environment
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap.ps1
+```
+
+The bootstrap script installs:
+
+- repo-local `StyLua`
+- repo-local `LuaRocks`
+- repo-local `Luacheck`
+- `Lua Language Server` through `winget` when available
+- recommended VS Code extensions when the `code` CLI is available
+
+## Daily Workflow
+
+Typical contributor flow:
+
+1. Run `scripts/bootstrap.ps1` once after cloning.
+2. Open the repository in VS Code.
+3. Edit Lua files with format-on-save enabled.
+4. Run lint and tests before opening a pull request.
+5. Let CI enforce the same checks again.
+
+Common commands:
+
+```powershell
+.\scripts\fmt.ps1
+.\scripts\fmt.ps1 -Check
+.\scripts\lint.ps1
+.\scripts\test.ps1
+.\scripts\test.ps1 -Experimental
+```
+
+## Tooling Standard
+
+This repository standardizes on:
+
+- Runtime: `LuaJIT`
+- Formatter: `StyLua`
+- Linter: `Luacheck`
+- IDE / LSP: `Lua Language Server`
+- Test runners: the existing Python wrappers plus project-owned Lua test helpers
+
+Important rule:
+
+- `StyLua` owns formatting.
+- `Luacheck` owns linting.
+- `LuaLS` owns navigation, diagnostics, and editor assistance.
+- LuaLS formatting is disabled to avoid formatter conflicts.
+
+## Repository Layout
+
+- `headless_bridge.lua`: legacy bridge entry point
+- `json_worker.lua`: machine-facing JSON stdin/stdout entry point
+- `contracts/`: machine-readable API contracts and examples
+- `docs/`: project documentation
+- `scripts/`: local contributor scripts
+- `src/`: runtime implementation
+- `tests/`: unit, smoke, fixtures, and transport tests
+
+## Testing
+
+The current test setup already exists and is part of the project design:
+
+- `tests/run_unit.py` runs isolated Lua unit specs
+- `tests/run_smoke.py --suite stable` runs the supported runtime smoke suite
+- `tests/run_transport_smoke.py` validates the JSON worker contract
+
+This is why the repository does not currently require `busted` for normal contributor setup. The project already owns a compatible test flow around `luajit` and Python wrappers.
+
+## CI
+
+CI is enabled for:
+
+- format check
+- lint
+- unit tests
+- stable smoke tests
+- JSON transport smoke tests
+
+Because this repository depends on a compatible PoB host layout, CI first checks out the matching host repository and then places this repository inside that layout before running validation.
+
+## Feasibility Notes
+
+The proposed SOP is feasible, but two details matter in practice:
+
+1. This repository is not standalone.
+   You must document and automate the required host PoB layout. Without that, bootstrap can install tools but tests still cannot run.
+
+2. Windows tooling needs version pinning and fallbacks.
+   A naive "install LuaRocks and run `luarocks install luacheck`" flow is fragile on Windows. This repository now uses a repo-local LuaRocks environment with pinned helper repositories so that first-time contributors are less likely to get blocked.
 
 ## Public API Overview
 
-The exported API is centered around a session object created at startup.
-
-### Stable API v1
+Stable API v1 methods:
 
 - `load_build_xml`
 - `load_build_code`
@@ -79,153 +152,42 @@ The exported API is centered around a session object created at startup.
 - `get_runtime_status`
 - `health`
 
-`Stable API v1` is the only contract intended for external automation and future transports.
-
-Stable methods live at:
+Stable methods live under:
 
 - `session.api.<method>`
 
-Experimental methods live at:
+Experimental methods live under:
 
 - `session.api.experimental.<method>`
 
-Legacy compatibility keeps experimental methods flattened only on:
+Legacy compatibility keeps flattened experimental methods only on:
 
 - `PoBHeadless.<method>`
 
-### JSON Transport
+## JSON Worker Example
 
-The minimal formal transport is `JSON over stdin/stdout`:
-
-- one request
-- one response
-- process exit
-
-Request shape:
+Request:
 
 ```json
-{"id":"1","method":"health","params":{}}
+{ "id": "1", "method": "health", "params": {} }
 ```
 
-Response shape:
+Successful response:
 
 ```json
-{"id":"1","ok":true,"result":{"mainReady":true},"meta":{"request_id":"1","api_version":"v1","engine_version":"2.63.0","duration_ms":42}}
+{
+  "id": "1",
+  "ok": true,
+  "result": { "mainReady": true },
+  "meta": {
+    "request_id": "1",
+    "api_version": "v1",
+    "engine_version": "2.63.0",
+    "duration_ms": 42
+  }
+}
 ```
 
-Error shape:
+## Contributor Guide
 
-```json
-{"id":"1","ok":false,"error":{"code":"UNSUPPORTED_FIELD","message":"unsupported config field: enemyLevel","retryable":false,"details":{"field":"enemyLevel"}},"meta":{"request_id":"1","api_version":"v1","engine_version":"2.63.0","duration_ms":42}}
-```
-
-Response metadata:
-
-- `request_id`
-- `api_version`
-- `engine_version`
-- `duration_ms`
-
-Optional error details:
-
-- `UNSUPPORTED_FIELD`
-  - `field`
-- `BUILD_NOT_READY`
-  - `state`
-- `TIMEOUT`
-  - `max_frames`
-  - `max_seconds`
-  - `pending_action_count`
-  - `readiness`
-
-Current transport error codes:
-
-- `INVALID_REQUEST`
-- `INVALID_PARAMS`
-- `METHOD_NOT_FOUND`
-- `EXPERIMENTAL_API`
-- `BUILD_NOT_READY`
-- `UNSUPPORTED_FIELD`
-- `TIMEOUT`
-- `INTERNAL_ERROR`
-
-For stateless use, non-load methods may accept preload fields inside `params`:
-
-- `build_xml`
-- `build_code`
-- `build_name`
-
-Example:
-
-```json
-{"id":"2","method":"get_summary","params":{"build_xml":"<PathOfBuilding>...</PathOfBuilding>"}}
-```
-
-Machine-readable contract files:
-
-- [`contracts/stable_api_v1.json`](contracts/stable_api_v1.json)
-- [`contracts/examples/`](contracts/examples)
-
-### Experimental API
-
-The implementation still exposes additional methods for refactoring and local automation, but they are not part of the stable contract and may change without compatibility guarantees. This includes:
-
-- file save/load helpers
-- importer update helpers
-- skill selection APIs
-- config mutation APIs
-- tooltip/equip/simulate-mod item helpers
-- `get_tree`
-- snapshot/restore/search helpers
-
-If a service is unavailable, the API returns a clear error instead of silently degrading. Callers can inspect the declared API tiers through `get_api_surface()`.
-
-## Typical Use Cases
-
-### Build analysis
-
-Load a build, inspect summary stats, and compare before/after changes.
-
-### Stable item evaluation
-
-Parse an item, test it against the current build, and review the resulting stat delta before equipping it.
-
-### Stable passive tree simulation
-
-Snapshot the current tree, simulate node changes, and restore the previous state after inspection.
-
-## Testing Strategy
-
-The project uses both smoke tests and unit tests to protect the API surface and runtime behavior.
-
-Smoke tests are split into two suites:
-
-- `stable` for the supported contract surface
-- `experimental` for opt-in behavior that depends more heavily on PoB internals
-
-Unit tests focus on:
-
-- API exposure
-- repo/service boundaries
-- runtime session behavior
-- import orchestration
-- tree delta modeling
-- simulation restore behavior
-
-## Repository Layout
-
-- `headless_bridge.lua` - runtime bootstrap and session startup
-- `json_worker.lua` - formal JSON stdin/stdout worker entry point
-- `contracts` - machine-readable API contract manifest and examples
-- `docs` - architecture and flow documentation
-- `src` - implementation code
-- `tests` - smoke tests and unit tests
-- `tips` - notes and design drafts
-
-## Status
-
-This repository is oriented around experimentation, automation, and refactoring of PoB headless workflows. The safest way to understand behavior is to inspect the tests and the service layer together.
-
-## License
-
-Add the project license here if it is not already defined at the repository root.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full development SOP, troubleshooting notes, and pull request expectations.
