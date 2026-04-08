@@ -29,13 +29,14 @@ do
     expect(type(session:getServices()) == "table", "expected session services table")
     expect(type(session.api) == "table", "expected session api table")
     expect(type(session.api.load_build_xml) == "function", "expected session api surface")
+    expect(type(session.api.load_build_file) == "function", "expected stable build file helper")
     expect(type(session.api.experimental) == "table", "expected session experimental namespace")
     expect(
-        type(session.api.experimental.load_build_file) == "function",
-        "expected experimental build helper namespace"
+        type(session.api.experimental.compare_item_stats) == "function",
+        "expected experimental namespace helper"
     )
     expect(
-        session.api.load_build_file == nil,
+        session.api.compare_item_stats == nil,
         "expected experimental helper to stay off stable root"
     )
     local status = session:getStatus()
@@ -147,10 +148,10 @@ do
     expect(type(PoBHeadless.experimental) == "table", "expected legacy experimental namespace")
     expect(
         type(PoBHeadless.load_build_file) == "function",
-        "expected legacy flattened experimental helper"
+        "expected legacy stable helper"
     )
     expect(
-        type(PoBHeadless.experimental.load_build_file) == "function",
+        type(PoBHeadless.experimental.compare_item_stats) == "function",
         "expected legacy namespaced experimental helper"
     )
 

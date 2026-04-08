@@ -22,18 +22,18 @@ SUITES: dict[str, tuple[str, ...]] = {
     "stable": (
         "smoke_build_code.lua",
         "smoke_contract_regression.lua",
-        "smoke_item_compare.lua",
         "smoke_min_api.lua",
-        "smoke_stats_compare.lua",
-        "smoke_tree_simulation.lua",
     ),
     "experimental": (
         "smoke_config_compare_stats.lua",
         "smoke_importer_update.lua",
+        "smoke_item_compare.lua",
         "smoke_item_slot_rules.lua",
         "smoke_item_tooltip.lua",
         "smoke_simulate_mod.lua",
         "smoke_skills_config.lua",
+        "smoke_stats_compare.lua",
+        "smoke_tree_simulation.lua",
     ),
 }
 

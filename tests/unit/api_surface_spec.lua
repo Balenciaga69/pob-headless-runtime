@@ -6,29 +6,35 @@ do
 
     expect(type(api.load_build_xml) == "function", "expected load_build_xml export")
     expect(type(api.load_build_code) == "function", "expected load_build_code export")
-    expect(type(api.compare_item_stats) == "function", "expected compare_item_stats export")
+    expect(type(api.load_build_file) == "function", "expected load_build_file export")
+    expect(type(api.save_build_xml) == "function", "expected save_build_xml export")
+    expect(type(api.save_build_code) == "function", "expected save_build_code export")
+    expect(type(api.save_build_file) == "function", "expected save_build_file export")
     expect(type(api.get_summary) == "function", "expected get_summary export")
     expect(type(api.get_stats) == "function", "expected get_stats export")
-    expect(type(api.simulate_node_delta) == "function", "expected simulate_node_delta export")
+    expect(type(api.equip_item) == "function", "expected equip_item export")
+    expect(type(api.list_equipment) == "function", "expected list_equipment export")
+    expect(type(api.set_config) == "function", "expected set_config export")
+    expect(type(api.get_config) == "function", "expected get_config export")
     expect(type(api.get_runtime_status) == "function", "expected get_runtime_status export")
     expect(type(api.health) == "function", "expected health export")
     expect(type(api.get_api_surface) == "function", "expected get_api_surface export")
     expect(type(api.experimental) == "table", "expected experimental namespace export")
     expect(
-        type(api.update_imported_build) == "nil",
+        type(api.compare_item_stats) == "nil",
         "expected experimental method to stay off stable root"
     )
     expect(
-        type(api.experimental.update_imported_build) == "function",
-        "expected experimental build export"
+        type(api.experimental.compare_item_stats) == "function",
+        "expected experimental item export"
     )
     expect(
         type(api.experimental.compare_config_stats) == "function",
         "expected experimental config export"
     )
     expect(
-        type(api.experimental.render_item_tooltip) == "function",
-        "expected experimental item export"
+        type(api.experimental.simulate_node_delta) == "function",
+        "expected experimental tree export"
     )
 end
 
@@ -59,15 +65,20 @@ do
 
     expect(stable.load_build_xml == true, "expected load_build_xml to be stable")
     expect(stable.get_summary == true, "expected get_summary to be stable")
-    expect(stable.compare_item_stats == true, "expected compare_item_stats to be stable")
+    expect(stable.load_build_file == true, "expected load_build_file to be stable")
+    expect(stable.save_build_xml == true, "expected save_build_xml to be stable")
+    expect(stable.equip_item == true, "expected equip_item to be stable")
+    expect(stable.list_equipment == true, "expected list_equipment to be stable")
+    expect(stable.set_config == true, "expected set_config to be stable")
+    expect(stable.get_config == true, "expected get_config to be stable")
     expect(stable.health == true, "expected health to be stable")
     expect(
-        experimental.update_imported_build == true,
-        "expected update_imported_build to be experimental"
+        experimental.compare_item_stats == true,
+        "expected compare_item_stats to be experimental"
     )
     expect(
-        experimental.render_item_tooltip == true,
-        "expected render_item_tooltip to be experimental"
+        experimental.simulate_node_delta == true,
+        "expected simulate_node_delta to be experimental"
     )
     expect(experimental.select_skill == true, "expected select_skill to be experimental")
     expect(surface.namespaces.stable == "top_level", "expected stable namespace marker")

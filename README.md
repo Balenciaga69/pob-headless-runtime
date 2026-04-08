@@ -1,6 +1,6 @@
 # pob-headless-runtime
 
-`pob-headless-runtime` is a headless automation layer for Path of Building. It exposes PoB runtime behavior through a scriptable API so external tools can load builds, inspect stats, simulate changes, compare results, and run repeatable workflows without the GUI.
+`pob-headless-runtime` is a headless automation layer for Path of Building. It exposes a small maintained API so external tools can open builds, save builds, read stats, mutate equipment, and apply config changes without the GUI.
 
 This repository is not a standalone PoB fork. It is meant to live inside a compatible Path of Building repository layout.
 
@@ -150,10 +150,16 @@ Stable API v1 methods:
 
 - `load_build_xml`
 - `load_build_code`
+- `load_build_file`
+- `save_build_xml`
+- `save_build_code`
+- `save_build_file`
 - `get_summary`
 - `get_stats(fields)`
-- `compare_item_stats`
-- `simulate_node_delta`
+- `equip_item`
+- `list_equipment`
+- `set_config`
+- `get_config`
 - `get_runtime_status`
 - `health`
 
@@ -164,6 +170,8 @@ Stable methods live under:
 Experimental methods live under:
 
 - `session.api.experimental.<method>`
+
+Experimental methods are compatibility-only. They are not part of the maintained product contract, may lag upstream PoB changes, and should be treated as author-unmaintained helpers.
 
 Legacy compatibility keeps flattened experimental methods only on:
 

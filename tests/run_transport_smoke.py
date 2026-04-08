@@ -69,11 +69,11 @@ def main() -> int:
         ),
         SmokeCase(
             name="experimental-method",
-            request={"id": "exp-1", "method": "equip_item", "params": {}},
+            request={"id": "exp-1", "method": "compare_item_stats", "params": {}},
         ),
         SmokeCase(
             name="invalid-params",
-            request={"id": "params-1", "method": "compare_item_stats", "params": {}},
+            request={"id": "params-1", "method": "equip_item", "params": {}},
         ),
     ]
 

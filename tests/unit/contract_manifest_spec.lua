@@ -46,8 +46,8 @@ do
         "expected stable get_summary manifest"
     )
     expect(
-        type(manifest.stable_methods.compare_item_stats) == "table",
-        "expected compare_item_stats manifest"
+        type(manifest.stable_methods.equip_item) == "table",
+        "expected equip_item manifest"
     )
     expect(type(manifest.experimental_methods) == "table", "expected experimental methods list")
 end

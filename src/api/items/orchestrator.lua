@@ -11,6 +11,19 @@ local tableUtil = require("util.table")
 local M = {}
 M.__index = M
 
+local function isSlotShown(slot)
+    if not slot then
+        return false
+    end
+    if type(slot.IsShown) == "function" then
+        return slot:IsShown()
+    end
+    if type(slot.shown) == "function" then
+        return slot.shown()
+    end
+    return true
+end
+
 function M.new(repos, services)
     return setmetatable({
         runtime = repos.runtime,
@@ -256,6 +269,30 @@ function M:equip_item(itemText, requestedSlot)
         slot = slotResolver.summarizeSlot(slotName, slot, normalizedSlot),
         previousItem = parser.summarizeItem(previousItem),
         item = parser.summarizeItem(equippedItem),
+    }
+end
+
+function M:list_equipment()
+    local build, err = self.runtime:ensure_build_ready({ "itemsTab" }, "items not initialized")
+    if not build then
+        return nil, err
+    end
+
+    local slots = {}
+    for _, slot in ipairs(self.pob:get_ordered_slots(build)) do
+        if slot and slot.slotName and isSlotShown(slot) then
+            local _, equippedItem = self.pob:get_item_by_slot(build, slot.slotName)
+            slots[#slots + 1] = {
+                slot = slot.slotName,
+                label = slot.label,
+                item = parser.summarizeItem(equippedItem),
+                raw = equippedItem and equippedItem.raw or nil,
+            }
+        end
+    end
+
+    return {
+        slots = slots,
     }
 end
 

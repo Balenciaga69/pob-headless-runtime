@@ -140,6 +140,8 @@ Run the extended test suite:
 .\scripts\test.ps1 -Experimental
 ```
 
+The `-Experimental` suite covers compatibility-only helpers. Failures there matter for legacy consumers, but the maintained contract for ongoing work is the stable API surface.
+
 ## API Structure
 
 `src/api` is organized by feature first.
@@ -163,6 +165,25 @@ Current features on the newer layout:
 
 All API features now use the same internal pattern.
 Do not re-introduce `repo.lua`, `service.lua`, or `pob_adapter.lua` into `src/api/<feature>/`.
+
+## API Maintenance Policy
+
+This repository intentionally does not aim to be a full headless PoB editor.
+
+Maintained stable surface:
+
+- build load/save
+- stats reads
+- direct item equip
+- equipment listing
+- config read/write
+- runtime health/status
+
+Experimental surface:
+
+- exists for legacy compatibility and local experimentation
+- is not guaranteed to track the latest PoB internals
+- should not be expanded unless a capability is intended to graduate into the stable product contract
 
 ## Pull Request Expectations
 

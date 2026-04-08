@@ -27,6 +27,14 @@ function M.set_config(session, params)
     return service:apply_config(params)
 end
 
+function M.get_config(session)
+    local service, err = requireConfigService(session)
+    if not service then
+        return nil, err
+    end
+    return service:get_config()
+end
+
 function M.compare_config_stats(session, params, fields)
     -- Compare stats before and after a config change.
     local service, err = requireConfigService(session)

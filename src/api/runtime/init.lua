@@ -7,36 +7,38 @@ local API_SURFACE = {
     stable = {
         "load_build_xml",
         "load_build_code",
-        "get_summary",
-        "get_stats",
-        "compare_item_stats",
-        "simulate_node_delta",
-        "get_runtime_status",
-        "health",
-    },
-    experimental = {
         "load_build_file",
         "save_build_xml",
         "save_build_code",
         "save_build_file",
+        "get_summary",
+        "get_stats",
+        "equip_item",
+        "list_equipment",
+        "set_config",
+        "get_config",
+        "get_runtime_status",
+        "health",
+    },
+    experimental = {
         "update_imported_build",
         "compare_stats",
         "list_skills",
         "select_skill",
         "get_selected_skill",
         "restore_skill_selection",
-        "set_config",
         "compare_config_stats",
         "parse_item",
         "test_item",
         "simulate_mod",
         "render_item_tooltip",
-        "equip_item",
+        "compare_item_stats",
         "get_tree",
         "get_tree_node",
         "search_tree_nodes",
         "create_tree_snapshot",
         "restore_tree_snapshot",
+        "simulate_node_delta",
     },
 }
 
@@ -51,7 +53,7 @@ function M.health(session)
     return M.get_runtime_status(session)
 end
 
--- Expose the formal API tiers so transports and tests can enforce contract boundaries.
+-- Expose the formal API tiers. Stable is maintained; experimental is compatibility-only.
 function M.get_api_surface()
     return {
         stable = { unpack(API_SURFACE.stable) },

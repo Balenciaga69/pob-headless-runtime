@@ -58,6 +58,23 @@
       },
       "notes": ["code or build_code is required"]
     },
+    "load_build_file": {
+      "params": {
+        "path": "string"
+      }
+    },
+    "save_build_xml": {
+      "params": {}
+    },
+    "save_build_code": {
+      "params": {}
+    },
+    "save_build_file": {
+      "params": {
+        "path": "string"
+      },
+      "notes": ["path is optional when a build was opened from a local file"]
+    },
     "get_summary": {
       "params": {
         "build_xml": "string",
@@ -73,24 +90,45 @@
         "build_name": "string"
       }
     },
-    "compare_item_stats": {
+    "equip_item": {
       "params": {
         "item_text": "string",
         "itemText": "string",
-        "slot": "string",
-        "fields": "string[]",
-        "build_xml": "string",
-        "build_code": "string",
-        "build_name": "string"
+        "slot": "string"
       },
       "notes": ["item_text or itemText is required"]
     },
-    "simulate_node_delta": {
+    "list_equipment": {
       "params": {
-        "add": "number[]",
-        "remove": "number[]",
-        "masteryEffects": "object",
-        "fields": "string[]",
+        "build_xml": "string",
+        "build_code": "string",
+        "build_name": "string"
+      }
+    },
+    "set_config": {
+      "params": {
+        "bandit": "string",
+        "pantheonMajorGod": "string",
+        "pantheonMinorGod": "string",
+        "enemyLevel": "number",
+        "enemyFireResist": "number",
+        "enemyColdResist": "number",
+        "enemyLightningResist": "number",
+        "enemyChaosResist": "number",
+        "enemyArmour": "number",
+        "enemyEvasion": "number",
+        "usePowerCharges": "boolean",
+        "useFrenzyCharges": "boolean",
+        "useEnduranceCharges": "boolean",
+        "conditionShockedGround": "boolean",
+        "conditionFortify": "boolean",
+        "conditionLeeching": "boolean",
+        "buffOnslaught": "boolean",
+        "enemyIsBoss": "string"
+      }
+    },
+    "get_config": {
+      "params": {
         "build_xml": "string",
         "build_code": "string",
         "build_name": "string"
@@ -104,27 +142,23 @@
     }
   },
   "experimental_methods": [
-    "load_build_file",
-    "save_build_xml",
-    "save_build_code",
-    "save_build_file",
     "update_imported_build",
     "compare_stats",
     "list_skills",
     "select_skill",
     "get_selected_skill",
     "restore_skill_selection",
-    "set_config",
     "compare_config_stats",
     "parse_item",
     "test_item",
     "simulate_mod",
     "render_item_tooltip",
-    "equip_item",
+    "compare_item_stats",
     "get_tree",
     "get_tree_node",
     "search_tree_nodes",
     "create_tree_snapshot",
-    "restore_tree_snapshot"
+    "restore_tree_snapshot",
+    "simulate_node_delta"
   ]
 }
