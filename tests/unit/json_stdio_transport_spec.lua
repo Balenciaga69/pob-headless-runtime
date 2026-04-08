@@ -103,6 +103,32 @@ do
 end
 
 do
+    local calls = {}
+    local api = {
+        get_display_stats = function()
+            calls[#calls + 1] = { "get_display_stats" }
+            return {
+                _meta = { mainSkill = "Kinetic Fusillade" },
+                entries = {
+                    { type = "stat", label = "Average Damage", formatted = "48585.9" },
+                },
+            }
+        end,
+    }
+
+    local response = transport.dispatchRequest(api, {
+        id = "display-stats-1",
+        method = "get_display_stats",
+        params = {},
+    })
+
+    expect(response.ok == true, "expected get_display_stats response success")
+    expect(response.result._meta.mainSkill == "Kinetic Fusillade", "expected meta payload")
+    expect(response.result.entries[1].label == "Average Damage", "expected stats entry")
+    expect(calls[1][1] == "get_display_stats", "expected get_display_stats dispatch")
+end
+
+do
     local response = transport.run({}, function()
         return '{"id":"bad","method":"get_stats","params":"oops"}'
     end, function(_) end)

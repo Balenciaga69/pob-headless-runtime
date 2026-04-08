@@ -46,6 +46,10 @@ do
         "expected stable get_summary manifest"
     )
     expect(
+        type(manifest.stable_methods.get_display_stats) == "table",
+        "expected stable get_display_stats manifest"
+    )
+    expect(
         type(manifest.stable_methods.equip_item) == "table",
         "expected equip_item manifest"
     )

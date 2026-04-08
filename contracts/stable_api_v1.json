@@ -90,6 +90,13 @@
         "build_name": "string"
       }
     },
+    "get_display_stats": {
+      "params": {
+        "build_xml": "string",
+        "build_code": "string",
+        "build_name": "string"
+      }
+    },
     "equip_item": {
       "params": {
         "item_text": "string",

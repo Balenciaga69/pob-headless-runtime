@@ -13,6 +13,7 @@ local DEFAULT_STABLE_METHODS = {
     save_build_file = true,
     get_summary = true,
     get_stats = true,
+    get_display_stats = true,
     equip_item = true,
     list_equipment = true,
     set_config = true,
@@ -176,6 +177,13 @@ local function dispatchStableMethod(api, method, params)
     end
     if method == "get_stats" then
         local result, err = api.get_stats(params.fields)
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "get_display_stats" then
+        local result, err = api.get_display_stats()
         if not result then
             return nil, transportError.fromUpstream(nil, err).error
         end

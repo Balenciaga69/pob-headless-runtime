@@ -13,6 +13,7 @@ local API_SURFACE = {
         "save_build_file",
         "get_summary",
         "get_stats",
+        "get_display_stats",
         "equip_item",
         "list_equipment",
         "set_config",

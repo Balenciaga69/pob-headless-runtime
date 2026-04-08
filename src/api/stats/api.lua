@@ -30,6 +30,14 @@ function M.get_summary(session)
     return service:get_summary()
 end
 
+function M.get_display_stats(session)
+    local service, err = requireStatsService(session)
+    if not service then
+        return nil, err
+    end
+    return service:get_display_stats()
+end
+
 function M.compare_stats(session, beforeStats, afterStats, fields)
     local service, err = requireStatsService(session)
     if not service then

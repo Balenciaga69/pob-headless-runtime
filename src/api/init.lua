@@ -48,6 +48,7 @@ function M.create(session)
         save_build_code = { service = "build", method = "save_build_code" },
         save_build_file = { service = "build", method = "save_build_file" },
         get_stats = { service = "stats", method = "get_stats" },
+        get_display_stats = { service = "stats", method = "get_display_stats" },
         get_summary = { service = "stats", method = "get_summary" },
         equip_item = { service = "items", method = "equip_item" },
         list_equipment = { service = "items", method = "list_equipment" },

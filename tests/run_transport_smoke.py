@@ -70,6 +70,16 @@ def main() -> int:
             },
         ),
         SmokeCase(
+            name="display-stats",
+            request={
+                "id": "display-stats-1",
+                "method": "get_display_stats",
+                "params": {
+                    "build_xml": build_xml,
+                },
+            },
+        ),
+        SmokeCase(
             name="build-code",
             request={
                 "id": "code-1",
@@ -140,6 +150,25 @@ def main() -> int:
                 and summary.get("level") == 100
                 and summary.get("mainSkill") == "Kinetic Fusillade"
                 and meta.get("request_id") == "code-1"
+                and meta.get("api_version") == "v1"
+                and meta.get("engine_version") == expected_engine_version
+                and isinstance(meta.get("duration_ms"), int)
+            )
+        elif case.name == "display-stats":
+            result = payload.get("result") or {}
+            entries = result.get("entries") or []
+            meta = payload.get("meta") or {}
+            ok = (
+                code == 0
+                and payload.get("ok") is True
+                and payload.get("id") == "display-stats-1"
+                and isinstance(entries, list)
+                and any(
+                    entry.get("label") == "Average Damage"
+                    for entry in entries
+                    if isinstance(entry, dict)
+                )
+                and meta.get("request_id") == "display-stats-1"
                 and meta.get("api_version") == "v1"
                 and meta.get("engine_version") == expected_engine_version
                 and isinstance(meta.get("duration_ms"), int)
