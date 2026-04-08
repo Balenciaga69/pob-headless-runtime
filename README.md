@@ -31,7 +31,8 @@ Legacy compatibility entry point:
 
 `json_worker.lua` is the formal machine-facing entry point for stable automation. It accepts one JSON request on `stdin`, writes one JSON response on `stdout`, and exits.
 
-`headless_bridge.lua` remains available for legacy script-driven workflows and smoke helpers through `POB_HEADLESS_SCRIPT`, but it is not the preferred external integration path.
+`headless_bridge.lua` remains available for legacy script-driven workflows and smoke helpers through `POB_HEADLESS_TEST_SCRIPT`, but it is not the preferred external integration path.
+`POB_HEADLESS_TEST_SCRIPT` is internal/debug only and should not be treated as a public integration contract.
 
 ## What This Project Is
 
@@ -62,7 +63,7 @@ If you want to integrate this project into another tool, use `json_worker.lua`.
 
 If you want a formal machine-facing transport, launch `json_worker.lua`, send one JSON request through `stdin`, read one JSON response from `stdout`, then exit the process.
 
-Use `headless_bridge.lua` only for legacy script-driven flows that still depend on `POB_HEADLESS_SCRIPT`.
+Use `headless_bridge.lua` only for legacy script-driven flows that still depend on `POB_HEADLESS_TEST_SCRIPT`.
 
 ## Public API Overview
 
@@ -104,19 +105,24 @@ The minimal formal transport is `JSON over stdin/stdout`:
 Request shape:
 
 ```json
-{"id":"1","method":"health","params":{}}
+{ "id": "1", "method": "health", "params": {} }
 ```
 
 Response shape:
 
 ```json
-{"id":"1","ok":true,"result":{"mainReady":true},"meta":{"request_id":"1","api_version":"v1","engine_version":"2.63.0","duration_ms":42}}
+{ "id": "1", "ok": true, "result": { "mainReady": true }, "meta": { "request_id": "1", "api_version": "v1", "engine_version": "2.63.0", "duration_ms": 42 } }
 ```
 
 Error shape:
 
 ```json
-{"id":"1","ok":false,"error":{"code":"UNSUPPORTED_FIELD","message":"unsupported config field: enemyLevel","retryable":false,"details":{"field":"enemyLevel"}},"meta":{"request_id":"1","api_version":"v1","engine_version":"2.63.0","duration_ms":42}}
+{
+  "id": "1",
+  "ok": false,
+  "error": { "code": "UNSUPPORTED_FIELD", "message": "unsupported config field: enemyLevel", "retryable": false, "details": { "field": "enemyLevel" } },
+  "meta": { "request_id": "1", "api_version": "v1", "engine_version": "2.63.0", "duration_ms": 42 }
+}
 ```
 
 Response metadata:
@@ -158,7 +164,7 @@ For stateless use, non-load methods may accept preload fields inside `params`:
 Example:
 
 ```json
-{"id":"2","method":"get_summary","params":{"build_xml":"<PathOfBuilding>...</PathOfBuilding>"}}
+{ "id": "2", "method": "get_summary", "params": { "build_xml": "<PathOfBuilding>...</PathOfBuilding>" } }
 ```
 
 Machine-readable contract files:

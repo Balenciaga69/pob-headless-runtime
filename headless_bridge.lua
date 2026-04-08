@@ -71,7 +71,7 @@ bootstrap.launch(context, callbacks)
 -- Install the legacy helper surface expected by older scripts.
 session:installLegacyHelpers()
 
--- Load an optional automation script from POB_HEADLESS_SCRIPT.
+-- Load an optional automation script from POB_HEADLESS_TEST_SCRIPT.
 session:loadHeadlessScript(argv)
 
 -- Drive PoB until it settles, using configurable safety bounds.

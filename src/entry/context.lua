@@ -8,10 +8,13 @@ local M = {}
 function M.fromArg0(arg0)
     -- Derive repo and module locations from the entry script path.
     local wrapperPath = pathUtil.normalize(arg0 or "headless_bridge.lua")
+    -- Use the platform separator consistently for every derived path.
     local pathSeparator = pathUtil.getPathSeparator()
     local toolDir = pathUtil.dirname(wrapperPath)
+    -- Walk upward from the wrapper to recover the custom and repo roots.
     local customDir = pathUtil.dirname(toolDir)
     local repoRoot = pathUtil.dirname(customDir)
+    -- These directories are the main roots used by the headless runtime.
     local sourceDir = pathUtil.join(repoRoot, "src")
     local runtimeDir = pathUtil.join(repoRoot, "runtime")
     local luaDir = pathUtil.join(toolDir, "src")
@@ -38,6 +41,7 @@ function M.resolveSourcePath(context, fileName)
     if pathUtil.isAbsolute(fileName) then
         return fileName
     end
+    -- Source files live under the repo's src directory.
     return pathUtil.join(context.sourceDir, fileName)
 end
 
@@ -47,6 +51,7 @@ function M.resolveLuaPath(context, fileName)
     if pathUtil.isAbsolute(fileName) then
         return fileName
     end
+    -- Local helper modules are rooted under the tool's src directory.
     return pathUtil.join(context.luaDir, fileName)
 end
 
@@ -56,12 +61,14 @@ function M.resolveCompatibilityPath(context, fileName)
     if pathUtil.isAbsolute(fileName) then
         return fileName
     end
+    -- Compatibility shims stay separate from the primary source tree.
     return pathUtil.join(context.compatibilityDir, fileName)
 end
 
 -- Add module search paths needed by headless runtime.
 function M.ensurePackagePaths(context)
     -- Prepend the local module roots to package.path once.
+    -- Order matters: the tool-local modules should win over bundled defaults.
     packagePathUtil.prependLuaModuleDir(context.luaDir)
     packagePathUtil.prependLuaModuleDir(context.runtimeLuaDir)
 end

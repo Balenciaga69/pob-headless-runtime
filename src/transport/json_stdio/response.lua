@@ -1,4 +1,4 @@
-local json = require("dkjson")
+local json = require("compatibility.dkjson")
 local transportError = require("transport.error")
 
 local M = {}
@@ -6,6 +6,7 @@ local API_VERSION = "v1"
 
 -- Build the standard transport metadata block for all responses.
 function M.buildMeta(requestId, options)
+	-- Measure elapsed time only when the caller provided a valid start timestamp.
 	options = options or {}
 	local startedAt = tonumber(options.started_at)
 	local durationMs = 0
@@ -22,11 +23,13 @@ end
 
 -- Wrap a transport error in the standard JSON response envelope.
 function M.buildErrorResponse(id, err, options)
+	-- Reuse the shared metadata builder so errors and successes look identical.
 	return transportError.response(id, err.code, err.message, err.retryable, err.details, M.buildMeta(id, options))
 end
 
 -- Build a successful JSON response envelope.
 function M.buildSuccess(id, result, options)
+	-- Keep the success payload shape stable for transport clients.
 	return {
 		id = id,
 		ok = true,
@@ -37,6 +40,7 @@ end
 
 -- Encode a response table into JSON text.
 function M.encodeResponse(response)
+	-- Emit compact JSON for stdio transport consumers.
 	return json.encode(response)
 end
 

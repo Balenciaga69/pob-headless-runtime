@@ -1,4 +1,5 @@
 -- Low-level build lifecycle adapter for repo callers.
+local accessUtil = require("util.access")
 local M = {}
 M.__index = M
 

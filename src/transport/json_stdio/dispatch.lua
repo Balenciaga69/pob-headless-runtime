@@ -17,6 +17,7 @@ local DEFAULT_STABLE_METHODS = {
 
 -- Resolve the stable method surface from the API or fall back to the built-in list.
 local function getStableMethods(api)
+	-- Prefer the API-advertised surface so transport behavior follows runtime capabilities.
 	local stable = {}
 	if type(api) == "table" and type(api.get_api_surface) == "function" then
 		local surface = api.get_api_surface()
@@ -35,6 +36,7 @@ end
 
 -- Validate the request envelope and reject unsupported methods before dispatch.
 function M.assertRequestShape(request, api)
+	-- Reject unsupported methods before any runtime work is attempted.
 	local validRequest, err = requestUtil.assertRequestEnvelope(request)
 	if not validRequest then
 		return nil, err
@@ -54,6 +56,7 @@ end
 
 -- Preload build data from stateless request params when the method is not a load call.
 local function preloadBuild(api, method, params)
+	-- Allow callers to send build payloads inline for convenience.
 	if method == "load_build_xml" or method == "load_build_code" then
 		return true
 	end
@@ -76,6 +79,7 @@ end
 
 -- Execute one stable API method and convert upstream failures into transport errors.
 local function dispatchStableMethod(api, method, params)
+	-- Handle each supported method explicitly so error mapping stays predictable.
 	if method == "load_build_xml" then
 		local xmlText, paramErr = requestUtil.requireNonEmptyString(params, "xmlText", "xmlText or build_xml")
 		if not xmlText then
@@ -166,6 +170,7 @@ end
 
 -- Apply transport validation, preload handling, and stable dispatch in one step.
 function M.dispatchRequest(api, request, options)
+	-- Validate first, then dispatch, then wrap the result into a response envelope.
 	local validRequest, requestErr = M.assertRequestShape(request, api)
 	if not validRequest then
 		return responseUtil.buildErrorResponse(request and request.id or nil, requestErr, options)
