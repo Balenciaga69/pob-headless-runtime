@@ -132,6 +132,7 @@ Run the default test suite:
 
 ```powershell
 .\scripts\test.ps1
+python .\tests\run_transport_smoke.py
 ```
 
 Run the extended test suite:
@@ -139,6 +140,8 @@ Run the extended test suite:
 ```powershell
 .\scripts\test.ps1 -Experimental
 ```
+
+The `-Experimental` suite covers compatibility-only helpers. Failures there matter for legacy consumers, but the maintained contract for ongoing work is the stable API surface.
 
 ## API Structure
 
@@ -164,14 +167,35 @@ Current features on the newer layout:
 All API features now use the same internal pattern.
 Do not re-introduce `repo.lua`, `service.lua`, or `pob_adapter.lua` into `src/api/<feature>/`.
 
+## API Maintenance Policy
+
+This repository intentionally does not aim to be a full headless PoB editor.
+
+Maintained stable surface:
+
+- build load/save
+- stats reads
+- GUI-like display stats reads
+- direct item equip
+- equipment listing
+- config read/write
+- runtime health/status
+
+Experimental surface:
+
+- exists for legacy compatibility and local experimentation
+- is not guaranteed to track the latest PoB internals
+- should not be expanded unless a capability is intended to graduate into the stable product contract
+
 ## Pull Request Expectations
 
 Before opening a pull request:
 
 1. Run formatting.
 2. Run lint.
-3. Run tests.
-4. Make sure your change still works inside a compatible PoB host layout.
+3. Run unit/smoke tests.
+4. Run transport smoke.
+5. Make sure your change still works inside a compatible PoB host layout.
 
 There is no active GitHub Actions workflow at the moment, so the local scripts are the source of truth for validation.
 
@@ -216,3 +240,10 @@ If you change the compatible host repository or branch:
 1. update `README.md`
 2. update this file
 3. verify the full test suite again
+
+If you change the stable API surface:
+
+1. update `contracts/stable_api_v1.json`
+2. update `README.md`
+3. update `VERSIONING.md` if the change affects release classification
+4. update or add transport smoke coverage

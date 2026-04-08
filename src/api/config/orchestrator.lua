@@ -72,6 +72,24 @@ function M:apply_config(params)
     }
 end
 
+function M:get_config()
+    -- Read the supported writable config surface back as a normalized payload.
+    local build, err =
+        self.runtime:ensure_build_ready({ "configTab", "calcsTab" }, "build/config not initialized")
+    if not build then
+        return nil, err
+    end
+
+    local input = self.pob:get_input(build)
+    local result = {}
+    for key, spec in pairs(configSpecs) do
+        if type(spec.read) == "function" then
+            result[key] = spec.read(build, input, self.pob)
+        end
+    end
+    return result
+end
+
 function M:compare_config_stats(params, fields)
     -- Snapshot, apply, compare, and restore a config change.
     if fields ~= nil and type(fields) ~= "table" then

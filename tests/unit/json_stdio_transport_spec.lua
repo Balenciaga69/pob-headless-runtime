@@ -9,7 +9,7 @@ end
 
 do
     local request, err = transport.decodeRequest('{"id":"1","method":"equip_item","params":{}}')
-    expect(request ~= nil and err == nil, "expected experimental method to pass envelope decode")
+    expect(request ~= nil and err == nil, "expected stable method to pass envelope decode")
     expect(request.method == "equip_item", "expected equip_item method to survive decode")
 end
 
@@ -103,6 +103,32 @@ do
 end
 
 do
+    local calls = {}
+    local api = {
+        get_display_stats = function()
+            calls[#calls + 1] = { "get_display_stats" }
+            return {
+                _meta = { mainSkill = "Kinetic Fusillade" },
+                entries = {
+                    { type = "stat", label = "Average Damage", formatted = "48585.9" },
+                },
+            }
+        end,
+    }
+
+    local response = transport.dispatchRequest(api, {
+        id = "display-stats-1",
+        method = "get_display_stats",
+        params = {},
+    })
+
+    expect(response.ok == true, "expected get_display_stats response success")
+    expect(response.result._meta.mainSkill == "Kinetic Fusillade", "expected meta payload")
+    expect(response.result.entries[1].label == "Average Damage", "expected stats entry")
+    expect(calls[1][1] == "get_display_stats", "expected get_display_stats dispatch")
+end
+
+do
     local response = transport.run({}, function()
         return '{"id":"bad","method":"get_stats","params":"oops"}'
     end, function(_) end)
@@ -118,14 +144,15 @@ do
         get_api_surface = function()
             return {
                 stable = { "health" },
-                experimental = { "equip_item" },
+                stable = { "health" },
+                experimental = { "compare_item_stats" },
             }
         end,
     }
 
     local response = transport.dispatchRequest(api, {
         id = "exp-1",
-        method = "equip_item",
+        method = "compare_item_stats",
         params = {},
     })
 
@@ -154,11 +181,11 @@ end
 do
     local response = transport.dispatchRequest({}, {
         id = "params-1",
-        method = "compare_item_stats",
+        method = "equip_item",
         params = {},
     })
 
-    expect(response.ok == false, "expected compare_item_stats param failure")
+    expect(response.ok == false, "expected equip_item param failure")
     expect(response.error.code == "INVALID_PARAMS", "expected invalid params for missing item")
     expect(
         response.error.message:match("item_text or itemText is required"),
@@ -166,6 +193,29 @@ do
     )
     expect(response.meta.request_id == "params-1", "expected missing item request_id metadata")
     expect(response.meta.duration_ms >= 0, "expected non-negative duration metadata")
+end
+
+do
+    local calls = {}
+    local api = {
+        equip_item = function(itemText, slot)
+            calls[#calls + 1] = { "equip_item", itemText, slot }
+            return { slot = { resolved = slot }, item = { name = "Test" } }
+        end,
+    }
+
+    local response = transport.dispatchRequest(api, {
+        id = "equip-1",
+        method = "equip_item",
+        params = {
+            item_text = "Rarity: Rare",
+            slot = "Ring 1",
+        },
+    })
+
+    expect(response.ok == true, "expected equip_item response success")
+    expect(response.result.slot.resolved == "Ring 1", "expected slot payload")
+    expect(calls[1][1] == "equip_item", "expected equip_item dispatch")
 end
 
 do

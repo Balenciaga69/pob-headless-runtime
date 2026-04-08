@@ -1,0 +1,39 @@
+{
+  "id": "display-stats-1",
+  "ok": true,
+  "result": {
+    "_meta": {
+      "buildName": "API Build",
+      "level": 100,
+      "treeVersion": "3_28",
+      "mainSkill": "Kinetic Fusillade",
+      "skillContext": {
+        "socketGroupIndex": 1,
+        "socketGroupLabel": "Kinetic Fusillade",
+        "skillIndex": 1,
+        "skillPartIndex": 1,
+        "skillPartName": "All Projectiles",
+        "name": "Kinetic Fusillade",
+        "selectionSource": "calcs"
+      }
+    },
+    "entries": [
+      {
+        "type": "stat",
+        "key": "AverageDamage",
+        "label": "Average Damage",
+        "rawValue": 72353.271013144,
+        "value": 72353.271013144,
+        "formatted": "72,353.3",
+        "format": ".1f",
+        "colorHint": "Average Damage"
+      }
+    ]
+  },
+  "meta": {
+    "request_id": "display-stats-1",
+    "api_version": "v1",
+    "engine_version": "2.63.0",
+    "duration_ms": 42
+  }
+}

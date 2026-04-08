@@ -11,8 +11,8 @@ This folder collects test-related scripts for the headless PoB bridge.
 
 Smoke suites:
 
-- `stable` for the supported contract surface
-- `experimental` for opt-in behavior that may change
+- `stable` for the maintained product contract
+- `experimental` for compatibility helpers the author does not plan to actively maintain
 - `all` for local full regression runs
 
 Run smoke tests with:

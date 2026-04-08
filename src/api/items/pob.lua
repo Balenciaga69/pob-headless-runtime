@@ -36,4 +36,8 @@ function M:add_and_equip_item(build, item, slot)
     return build.itemsTab.items[item.id]
 end
 
+function M:get_ordered_slots(build)
+    return build.itemsTab and build.itemsTab.orderedSlots or {}
+end
+
 return M

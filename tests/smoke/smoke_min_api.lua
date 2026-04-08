@@ -5,18 +5,6 @@ local testkit = require("testkit")
 local xmlPath = smokekit.requireXmlArg()
 
 smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
-    local skills, skillsErr = api.list_skills()
-    if not skills then
-        return false, skillsErr
-    end
-    if not skills.groups or #skills.groups == 0 then
-        return false, "min_api: expected at least one skill group"
-    end
-
-    testkit.expect(
-        type(skills.groups) == "table" and #skills.groups > 0,
-        "min_api: expected at least one skill group"
-    )
     testkit.expect(summary.buildName ~= nil, "min_api: expected build name in summary")
 
     local stats, statsErr = api.get_stats({ "Life", "TotalDPS" })
@@ -32,36 +20,31 @@ smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
         "min_api: expected at least one stat value"
     )
 
-    local firstGroup = skills.groups[1]
-    local firstSkill = firstGroup and firstGroup.skills and firstGroup.skills[1]
-    if firstGroup and firstSkill then
-        local selected, selectErr = api.select_skill({
-            group = firstGroup.index,
-            skill = firstGroup.mainActiveSkill or firstSkill.index or 1,
-        })
-        if not selected then
-            error(selectErr, 0)
-        end
-
-        testkit.expect(
-            selected.mainSocketGroup == firstGroup.index,
-            "min_api: selected group mismatch"
-        )
+    local configBefore, configBeforeErr = api.get_config()
+    if not configBefore then
+        return false, configBeforeErr
     end
 
-    local _, configErr = api.set_config({
+    local updatedConfig, configErr = api.set_config({
         enemyLevel = 84,
         enemyIsBoss = "Pinnacle",
     })
-    if configErr then
+    if not updatedConfig then
         return false, configErr
     end
+    testkit.expect(updatedConfig.enemyLevel == 84, "min_api: expected updated enemy level")
 
     local _, invalidConfigErr = api.set_config({ invalidField = true })
     testkit.expect(
         invalidConfigErr ~= nil and invalidConfigErr:match("^unsupported config field:"),
         "min_api: expected unsupported field error"
     )
+
+    local equipment, equipmentErr = api.list_equipment()
+    if not equipment then
+        return false, equipmentErr
+    end
+    testkit.expect(type(equipment.slots) == "table", "min_api: expected equipment slots")
 
     local xmlText, xmlErr = api.save_build_xml()
     if not xmlText then
@@ -71,7 +54,8 @@ smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
 
     print("buildName", summary.buildName or "")
     print("mainSkill", stats._meta and stats._meta.mainSkill or "")
-    print("skillGroups", #skills.groups)
+    print("equipmentSlots", #equipment.slots)
+    print("enemyLevel", updatedConfig.enemyLevel or 0)
     print("xmlSize", #xmlText)
     return true
 end)

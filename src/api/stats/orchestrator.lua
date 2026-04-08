@@ -29,6 +29,7 @@ function M.new(repos)
     return setmetatable({
         runtime = repos.runtime,
         pob = require("api.stats.pob").new(),
+        displayStats = require("api.stats.display_stats").new(),
     }, M)
 end
 
@@ -38,6 +39,20 @@ end
 
 function M:get_main_skill_name(build)
     return self.pob:get_main_skill_name(build)
+end
+
+function M:get_skill_context(build)
+    return self.pob:get_skill_context(build)
+end
+
+function M:get_tree_version(build)
+    return build
+            and (
+                (build.spec and build.spec.treeVersion)
+                or build.targetVersion
+                or nil
+            )
+        or nil
 end
 
 function M:get_output()
@@ -53,26 +68,26 @@ function M:get_output()
 end
 
 function M:build_meta(build)
+    local skillContext = self:get_skill_context(build)
     return {
         buildName = build and build.buildName or nil,
         level = build and tonumber(build.characterLevel) or nil,
-        treeVersion = build
-                and (build.targetVersion or (build.spec and build.spec.treeVersion) or nil)
-            or nil,
-        mainSkill = self:get_main_skill_name(build),
+        treeVersion = self:get_tree_version(build),
+        mainSkill = skillContext and skillContext.name or nil,
+        skillContext = skillContext,
     }
 end
 
 function M:build_summary(build, output)
+    local skillContext = self:get_skill_context(build)
     return {
         buildName = build and build.buildName or nil,
         level = build and tonumber(build.characterLevel) or nil,
         className = build and build.spec and build.spec.curClassName or nil,
         ascendClassName = build and build.spec and build.spec.curAscendClassName or nil,
-        treeVersion = build
-                and (build.targetVersion or (build.spec and build.spec.treeVersion) or nil)
-            or nil,
-        mainSkill = self:get_main_skill_name(build),
+        treeVersion = self:get_tree_version(build),
+        mainSkill = skillContext and skillContext.name or nil,
+        skillContext = skillContext,
         stats = {
             TotalDPS = output and output.TotalDPS or nil,
             CombinedDPS = output and output.CombinedDPS or nil,
@@ -113,6 +128,18 @@ function M:get_summary()
         return nil, build
     end
     return self:build_summary(build, output)
+end
+
+function M:get_display_stats()
+    local output, build = self:get_output()
+    if not output then
+        return nil, build
+    end
+
+    return {
+        _meta = self:build_meta(build),
+        entries = self.displayStats:build_entries(build),
+    }
 end
 
 function M:normalize_compare_fields(beforeStats, afterStats, fields)
