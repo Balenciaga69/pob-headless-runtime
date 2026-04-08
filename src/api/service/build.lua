@@ -1,7 +1,7 @@
 -- Build service orchestrating load and save use cases.
 local M = {}
 M.__index = M
-local pobCode = require("util.pob_code")
+local pobCode = require("api.repo.pob_code")
 
 function M.new(repos, services, session, fileUtil)
 	-- Keep the build service stateless by storing only its dependencies.

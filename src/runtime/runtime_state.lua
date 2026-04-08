@@ -3,10 +3,7 @@ local M = {}
 
 -- Read whether the runtime is currently blocked by a prompt.
 function M.getPromptMessage(callbacks)
-	return callbacks
-		and callbacks.mainObject
-		and callbacks.mainObject.promptMsg
-		or nil
+	return callbacks and callbacks.mainObject and callbacks.mainObject.promptMsg or nil
 end
 
 -- Decide whether the runtime should stop advancing frames.

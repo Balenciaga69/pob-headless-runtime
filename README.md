@@ -43,6 +43,11 @@ The architecture follows a three-layer model:
 - `service` for business logic and orchestration
 - `api` for the public surface exposed to callers
 
+Implementation detail:
+
+- repo-facing build guard and PoB share-code codec helpers live under `src/api/repo/`
+- runtime lifecycle state helpers live under `src/runtime/`
+
 ## Key Features
 
 - Load builds from XML text or PoB share code
