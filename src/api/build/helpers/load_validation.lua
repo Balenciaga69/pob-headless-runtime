@@ -38,7 +38,8 @@ function M.parse_expected_build_state(xmlText)
         className = attrib.className,
         ascendClassName = attrib.ascendClassName,
         targetVersion = attrib.targetVersion,
-    }, nil
+    },
+        nil
 end
 
 function M.capture_loaded_build_state(build)
@@ -49,7 +50,8 @@ function M.capture_loaded_build_state(build)
         level = build and tonumber(build.characterLevel) or nil,
         className = spec and spec.curClassName or nil,
         ascendClassName = spec and spec.curAscendClassName or nil,
-        targetVersion = build and (build.targetVersion or (spec and spec.treeVersion) or nil) or nil,
+        targetVersion = build and (build.targetVersion or (spec and spec.treeVersion) or nil)
+            or nil,
         mainSocketGroup = build and tonumber(build.mainSocketGroup) or nil,
         socketGroupCount = type(groups) == "table" and #groups or 0,
     }

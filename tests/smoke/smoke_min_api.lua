@@ -20,6 +20,21 @@ smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
         "min_api: expected at least one stat value"
     )
 
+    local skills, skillsErr = api.list_skills()
+    if not skills then
+        return false, skillsErr
+    end
+    testkit.expect(type(skills.groups) == "table", "min_api: expected skill groups")
+
+    local selectedSkill, selectedSkillErr = api.get_selected_skill()
+    if not selectedSkill then
+        return false, selectedSkillErr
+    end
+    testkit.expect(
+        selectedSkill.skill and selectedSkill.skill.name ~= nil,
+        "min_api: expected selected skill payload"
+    )
+
     local configBefore, configBeforeErr = api.get_config()
     if not configBefore then
         return false, configBeforeErr
@@ -46,6 +61,12 @@ smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
     end
     testkit.expect(type(equipment.slots) == "table", "min_api: expected equipment slots")
 
+    local items, itemsErr = api.list_items()
+    if not items then
+        return false, itemsErr
+    end
+    testkit.expect(type(items.items) == "table", "min_api: expected item list")
+
     local xmlText, xmlErr = api.save_build_xml()
     if not xmlText then
         return false, xmlErr
@@ -55,6 +76,7 @@ smokekit.runQueuedSmoke(api, xmlPath, function(_, summary)
     print("buildName", summary.buildName or "")
     print("mainSkill", stats._meta and stats._meta.mainSkill or "")
     print("equipmentSlots", #equipment.slots)
+    print("items", #items.items)
     print("enemyLevel", updatedConfig.enemyLevel or 0)
     print("xmlSize", #xmlText)
     return true

@@ -40,4 +40,8 @@ function M:get_ordered_slots(build)
     return build.itemsTab and build.itemsTab.orderedSlots or {}
 end
 
+function M:get_items(build)
+    return build.itemsTab and build.itemsTab.items or {}
+end
+
 return M
