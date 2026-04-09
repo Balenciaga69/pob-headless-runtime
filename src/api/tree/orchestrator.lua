@@ -484,7 +484,8 @@ function M:simulate_node_delta(params, fields)
         return nil, beforeErr
     end
     local beforeTree = self:summarize_tree_state(build)
-    local beforeStats = self.stats:pick_fields(beforeOutput, fields or self.stats:get_default_stat_fields())
+    local beforeStats =
+        self.stats:pick_fields(beforeOutput, fields or self.stats:get_default_stat_fields())
     beforeStats._meta = self.stats:build_meta(build)
 
     local snapshot = copyUndoState(build.spec:CreateUndoState())
@@ -496,7 +497,8 @@ function M:simulate_node_delta(params, fields)
     end
 
     local afterTree = self:summarize_tree_state(build)
-    local afterStats = self.stats:pick_fields(afterOutput, fields or self.stats:get_default_stat_fields())
+    local afterStats =
+        self.stats:pick_fields(afterOutput, fields or self.stats:get_default_stat_fields())
     afterStats._meta = self.stats:build_meta(build)
 
     local compared, compareErr = self.stats:compare_stats(beforeStats, afterStats, fields)

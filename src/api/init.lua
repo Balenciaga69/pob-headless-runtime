@@ -52,6 +52,10 @@ function M.create(session)
         get_summary = { service = "stats", method = "get_summary" },
         equip_item = { service = "items", method = "equip_item" },
         list_equipment = { service = "items", method = "list_equipment" },
+        list_items = { service = "items", method = "list_items" },
+        list_skills = { service = "skills", method = "list_skills" },
+        select_skill = { service = "skills", method = "select_skill" },
+        get_selected_skill = { service = "skills", method = "get_selected_skill" },
         set_config = { service = "config", method = "apply_config" },
         get_config = { service = "config", method = "get_config" },
     })

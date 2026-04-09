@@ -101,7 +101,13 @@ function M:build_entries(build)
     local entries = {}
 
     for _, statData in ipairs(statList) do
-        if matchFlags(statData.flag, statData.notFlag, actor.mainSkill and actor.mainSkill.skillFlags) then
+        if
+            matchFlags(
+                statData.flag,
+                statData.notFlag,
+                actor.mainSkill and actor.mainSkill.skillFlags
+            )
+        then
             if statData.stat then
                 local statValue = actor.output and actor.output[statData.stat] or nil
                 if statValue and statData.childStat then
@@ -120,27 +126,36 @@ function M:build_entries(build)
                             entries[#entries + 1] = {
                                 type = "skill_dps",
                                 key = "SkillDPS",
-                                label = skillData.count and skillData.count >= 2
+                                label = skillData.count
+                                        and skillData.count >= 2
                                         and tostring(skillData.count) .. "x " .. skillData.name
                                     or skillData.name,
                                 value = skillData.dps * (skillData.count or 1),
-                                formatted = formatValue({ fmt = ".1f" }, skillData.dps * (skillData.count or 1)),
+                                formatted = formatValue(
+                                    { fmt = ".1f" },
+                                    skillData.dps * (skillData.count or 1)
+                                ),
                                 trigger = skillData.trigger,
                                 skillPart = skillData.skillPart,
                                 source = skillData.source,
                             }
                         end
                     elseif not statData.hideStat then
-                        local overCapValue = statData.overCapStat and actor.output[statData.overCapStat]
+                        local overCapValue = statData.overCapStat
+                                and actor.output[statData.overCapStat]
                             or nil
                         local formatted = formatValue(statData, normalizeValue(statData, statValue))
                         if overCapValue and overCapValue > 0 then
-                            formatted = formatted .. " (+" .. string_format("%d", overCapValue) .. "%)"
+                            formatted = formatted
+                                .. " (+"
+                                .. string_format("%d", overCapValue)
+                                .. "%)"
                         end
 
                         entries[#entries + 1] = {
                             type = "stat",
-                            key = statData.childStat and (statData.stat .. "." .. statData.childStat)
+                            key = statData.childStat
+                                    and (statData.stat .. "." .. statData.childStat)
                                 or statData.stat,
                             label = statData.label,
                             rawValue = statValue,

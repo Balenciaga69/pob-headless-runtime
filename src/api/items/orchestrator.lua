@@ -296,4 +296,40 @@ function M:list_equipment()
     }
 end
 
+function M:list_items()
+    local build, err = self.runtime:ensure_build_ready({ "itemsTab" }, "items not initialized")
+    if not build then
+        return nil, err
+    end
+
+    local items = {}
+    local itemIds = {}
+    local itemsById = self.pob:get_items(build)
+    for itemId, item in pairs(itemsById) do
+        if item then
+            itemIds[#itemIds + 1] = itemId
+        end
+    end
+
+    table.sort(itemIds, function(left, right)
+        if type(left) == "number" and type(right) == "number" then
+            return left < right
+        end
+        return tostring(left) < tostring(right)
+    end)
+
+    for _, itemId in ipairs(itemIds) do
+        local item = itemsById[itemId]
+        items[#items + 1] = {
+            id = itemId,
+            item = parser.summarizeItem(item),
+            raw = item and item.raw or nil,
+        }
+    end
+
+    return {
+        items = items,
+    }
+end
+
 return M

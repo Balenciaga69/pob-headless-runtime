@@ -15,6 +15,10 @@ do
     expect(type(api.get_display_stats) == "function", "expected get_display_stats export")
     expect(type(api.equip_item) == "function", "expected equip_item export")
     expect(type(api.list_equipment) == "function", "expected list_equipment export")
+    expect(type(api.list_items) == "function", "expected list_items export")
+    expect(type(api.list_skills) == "function", "expected list_skills export")
+    expect(type(api.select_skill) == "function", "expected select_skill export")
+    expect(type(api.get_selected_skill) == "function", "expected get_selected_skill export")
     expect(type(api.set_config) == "function", "expected set_config export")
     expect(type(api.get_config) == "function", "expected get_config export")
     expect(type(api.get_runtime_status) == "function", "expected get_runtime_status export")
@@ -71,6 +75,10 @@ do
     expect(stable.save_build_xml == true, "expected save_build_xml to be stable")
     expect(stable.equip_item == true, "expected equip_item to be stable")
     expect(stable.list_equipment == true, "expected list_equipment to be stable")
+    expect(stable.list_items == true, "expected list_items to be stable")
+    expect(stable.list_skills == true, "expected list_skills to be stable")
+    expect(stable.select_skill == true, "expected select_skill to be stable")
+    expect(stable.get_selected_skill == true, "expected get_selected_skill to be stable")
     expect(stable.set_config == true, "expected set_config to be stable")
     expect(stable.get_config == true, "expected get_config to be stable")
     expect(stable.health == true, "expected health to be stable")
@@ -83,6 +91,11 @@ do
         "expected simulate_node_delta to be experimental"
     )
     expect(experimental.select_skill == true, "expected select_skill to be experimental")
+    expect(experimental.list_skills == true, "expected list_skills to stay experimental")
+    expect(
+        experimental.get_selected_skill == true,
+        "expected get_selected_skill to stay experimental"
+    )
     expect(surface.namespaces.stable == "top_level", "expected stable namespace marker")
     expect(
         surface.namespaces.experimental == "experimental",

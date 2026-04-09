@@ -49,9 +49,16 @@ do
         type(manifest.stable_methods.get_display_stats) == "table",
         "expected stable get_display_stats manifest"
     )
+    expect(type(manifest.stable_methods.equip_item) == "table", "expected equip_item manifest")
+    expect(type(manifest.stable_methods.list_items) == "table", "expected list_items manifest")
+    expect(type(manifest.stable_methods.list_skills) == "table", "expected list_skills manifest")
     expect(
-        type(manifest.stable_methods.equip_item) == "table",
-        "expected equip_item manifest"
+        type(manifest.stable_methods.select_skill) == "table",
+        "expected select_skill manifest"
+    )
+    expect(
+        type(manifest.stable_methods.get_selected_skill) == "table",
+        "expected get_selected_skill manifest"
     )
     expect(type(manifest.experimental_methods) == "table", "expected experimental methods list")
 end

@@ -146,10 +146,7 @@ do
     expect(type(PoBHeadless.queue) == "function", "expected legacy queue helper")
     expect(type(PoBHeadless.stop) == "function", "expected legacy stop helper")
     expect(type(PoBHeadless.experimental) == "table", "expected legacy experimental namespace")
-    expect(
-        type(PoBHeadless.load_build_file) == "function",
-        "expected legacy stable helper"
-    )
+    expect(type(PoBHeadless.load_build_file) == "function", "expected legacy stable helper")
     expect(
         type(PoBHeadless.experimental.compare_item_stats) == "function",
         "expected legacy namespaced experimental helper"

@@ -105,6 +105,104 @@ end
 do
     local calls = {}
     local api = {
+        select_skill = function(params)
+            calls[#calls + 1] = { "select_skill", params and params.group, params and params.skill }
+            return {
+                mainSocketGroup = 2,
+                calcsSkillNumber = 2,
+            }
+        end,
+    }
+
+    local response = transport.dispatchRequest(api, {
+        id = "select-1",
+        method = "select_skill",
+        params = {
+            group = 2,
+            skill = 1,
+        },
+    })
+
+    expect(response.ok == true, "expected select_skill response success")
+    expect(response.result.mainSocketGroup == 2, "expected selected group payload")
+    expect(calls[1][1] == "select_skill", "expected select_skill dispatch")
+end
+
+do
+    local calls = {}
+    local api = {
+        get_selected_skill = function()
+            calls[#calls + 1] = { "get_selected_skill" }
+            return {
+                group = { index = 2 },
+                skill = { index = 1, name = "Kinetic Blast" },
+            }
+        end,
+    }
+
+    local response = transport.dispatchRequest(api, {
+        id = "selected-1",
+        method = "get_selected_skill",
+        params = {},
+    })
+
+    expect(response.ok == true, "expected get_selected_skill response success")
+    expect(response.result.skill.name == "Kinetic Blast", "expected selected skill payload")
+    expect(calls[1][1] == "get_selected_skill", "expected get_selected_skill dispatch")
+end
+
+do
+    local calls = {}
+    local api = {
+        list_items = function()
+            calls[#calls + 1] = { "list_items" }
+            return {
+                items = {
+                    { id = 10, item = { name = "Alpha" } },
+                    { id = 20, item = { name = "Beta" } },
+                },
+            }
+        end,
+    }
+
+    local response = transport.dispatchRequest(api, {
+        id = "items-1",
+        method = "list_items",
+        params = {},
+    })
+
+    expect(response.ok == true, "expected list_items response success")
+    expect(type(response.result.items) == "table", "expected item list payload")
+    expect(response.result.items[1].id == 10, "expected first item id")
+    expect(calls[1][1] == "list_items", "expected list_items dispatch")
+end
+
+do
+    local calls = {}
+    local api = {
+        list_skills = function()
+            calls[#calls + 1] = { "list_skills" }
+            return {
+                mainSocketGroup = 1,
+                groups = {},
+            }
+        end,
+    }
+
+    local response = transport.dispatchRequest(api, {
+        id = "skills-1",
+        method = "list_skills",
+        params = {},
+    })
+
+    expect(response.ok == true, "expected list_skills response success")
+    expect(response.result.mainSocketGroup == 1, "expected skill list payload")
+    expect(calls[1][1] == "list_skills", "expected list_skills dispatch")
+end
+
+do
+    local calls = {}
+    local api = {
         get_display_stats = function()
             calls[#calls + 1] = { "get_display_stats" }
             return {

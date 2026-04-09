@@ -72,4 +72,12 @@ function M.list_equipment(session)
     return service:list_equipment()
 end
 
+function M.list_items(session)
+    local service, err = requireItemsService(session)
+    if not service then
+        return nil, err
+    end
+    return service:list_items()
+end
+
 return M

@@ -46,13 +46,7 @@ function M:get_skill_context(build)
 end
 
 function M:get_tree_version(build)
-    return build
-            and (
-                (build.spec and build.spec.treeVersion)
-                or build.targetVersion
-                or nil
-            )
-        or nil
+    return build and ((build.spec and build.spec.treeVersion) or build.targetVersion or nil) or nil
 end
 
 function M:get_output()

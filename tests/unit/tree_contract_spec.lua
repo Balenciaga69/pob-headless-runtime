@@ -104,50 +104,51 @@ local function newTreeRepo()
     return treeRepoModule.new({ runtime = runtime }, {
         stats = {
             pick_fields = function(_, output, fields)
-            local result = {}
-            for _, field in ipairs(fields or {}) do
-                if output[field] ~= nil then
-                    result[field] = output[field]
+                local result = {}
+                for _, field in ipairs(fields or {}) do
+                    if output[field] ~= nil then
+                        result[field] = output[field]
+                    end
                 end
-            end
-            return result
-        end,
-        build_meta = function(_, buildObj)
-            return {
-                buildName = "TestBuild",
-                level = 95,
-                treeVersion = buildObj.spec.treeVersion,
-                mainSkill = "Vortex",
-            }
-        end,
-        compare_stats = function(_, beforeStats, afterStats, fields)
-            local delta = {}
-            local changedFields = {}
-            for _, field in ipairs(fields or {}) do
-                local before = tonumber(beforeStats[field]) or 0
-                local after = tonumber(afterStats[field]) or 0
-                local diff = after - before
-                delta[field] = diff
-                if diff ~= 0 then
-                    changedFields[#changedFields + 1] = field
+                return result
+            end,
+            build_meta = function(_, buildObj)
+                return {
+                    buildName = "TestBuild",
+                    level = 95,
+                    treeVersion = buildObj.spec.treeVersion,
+                    mainSkill = "Vortex",
+                }
+            end,
+            compare_stats = function(_, beforeStats, afterStats, fields)
+                local delta = {}
+                local changedFields = {}
+                for _, field in ipairs(fields or {}) do
+                    local before = tonumber(beforeStats[field]) or 0
+                    local after = tonumber(afterStats[field]) or 0
+                    local diff = after - before
+                    delta[field] = diff
+                    if diff ~= 0 then
+                        changedFields[#changedFields + 1] = field
+                    end
                 end
-            end
-            return {
-                fields = fields,
-                before = beforeStats,
-                after = afterStats,
-                delta = delta,
-                changedFields = changedFields,
-                _meta = {
-                    before = beforeStats._meta,
-                    after = afterStats._meta,
-                },
-            }
-        end,
-        get_default_stat_fields = function()
-            return { "Life", "TotalDPS" }
-        end,
-    } }),
+                return {
+                    fields = fields,
+                    before = beforeStats,
+                    after = afterStats,
+                    delta = delta,
+                    changedFields = changedFields,
+                    _meta = {
+                        before = beforeStats._meta,
+                        after = afterStats._meta,
+                    },
+                }
+            end,
+            get_default_stat_fields = function()
+                return { "Life", "TotalDPS" }
+            end,
+        },
+    }),
         state
 end
 

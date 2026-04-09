@@ -16,6 +16,10 @@ local DEFAULT_STABLE_METHODS = {
     get_display_stats = true,
     equip_item = true,
     list_equipment = true,
+    list_items = true,
+    list_skills = true,
+    select_skill = true,
+    get_selected_skill = true,
     set_config = true,
     get_config = true,
     get_runtime_status = true,
@@ -207,6 +211,34 @@ local function dispatchStableMethod(api, method, params)
     end
     if method == "list_equipment" then
         local result, err = api.list_equipment()
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "list_items" then
+        local result, err = api.list_items()
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "list_skills" then
+        local result, err = api.list_skills()
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "select_skill" then
+        local result, err = api.select_skill(params)
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "get_selected_skill" then
+        local result, err = api.get_selected_skill()
         if not result then
             return nil, transportError.fromUpstream(nil, err).error
         end

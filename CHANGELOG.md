@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1 - 2026-04-10
+
+### Added
+
+- Added stable `list_items` to return every item currently stored in `itemsTab.items`.
+- Added stable `list_skills`, `select_skill`, and `get_selected_skill` at the top-level API while keeping the experimental skill aliases for compatibility.
+- Added contract, transport, unit-test, and smoke coverage for the new stable skill/item methods.
+
+### Changed
+
+- Updated the public API surface, contract manifest, and README to document the stable skill/item methods.
+
 ## 0.2.0 - 2026-04-09
 
 ### Added
