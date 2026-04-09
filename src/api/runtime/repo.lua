@@ -1,17 +1,8 @@
 -- Low-level build lifecycle adapter for repo callers.
 local accessUtil = require("util.access")
+local buildGuard = require("api.shared.build_guard")
 local M = {}
 M.__index = M
-
-local function hasRequiredTabs(build, requiredTabs)
-    -- Verify that the build has every tab required by the caller.
-    for _, tabName in ipairs(requiredTabs or {}) do
-        if not build[tabName] then
-            return false
-        end
-    end
-    return true
-end
 
 function M.new(session)
     -- Bind the runtime adapter to a live session instance.
@@ -32,14 +23,7 @@ end
 
 function M:ensure_build_ready(requiredTabs, errorMessage)
     -- Make sure the build exists and exposes the requested tabs.
-    local build = self:get_build()
-    if not build then
-        return nil, errorMessage or "build not initialized"
-    end
-    if not hasRequiredTabs(build, requiredTabs) then
-        return nil, errorMessage or "build not initialized"
-    end
-    return build
+    return buildGuard.getBuildWithTabs(self.session, requiredTabs, errorMessage)
 end
 
 function M:get_status()

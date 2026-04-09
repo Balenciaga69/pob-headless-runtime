@@ -80,6 +80,27 @@ def main() -> int:
             },
         ),
         SmokeCase(
+            name="preview-item-display-stats",
+            request={
+                "id": "preview-display-1",
+                "method": "preview_item_display_stats",
+                "params": {
+                    "build_xml": build_xml,
+                    "item_text": """Rarity: Rare
+Dread Loop
+Ruby Ring
+--------
+Requirements:
+Level: 1
+--------
+Item Level: 1
+--------
++20 to maximum Life""",
+                    "slot": "Ring 1",
+                },
+            },
+        ),
+        SmokeCase(
             name="build-code",
             request={
                 "id": "code-1",
@@ -169,6 +190,24 @@ def main() -> int:
                     if isinstance(entry, dict)
                 )
                 and meta.get("request_id") == "display-stats-1"
+                and meta.get("api_version") == "v1"
+                and meta.get("engine_version") == expected_engine_version
+                and isinstance(meta.get("duration_ms"), int)
+            )
+        elif case.name == "preview-item-display-stats":
+            result = payload.get("result") or {}
+            display = result.get("displayStats") or {}
+            entries = display.get("entries") or []
+            meta = payload.get("meta") or {}
+            ok = (
+                code == 0
+                and payload.get("ok") is True
+                and payload.get("id") == "preview-display-1"
+                and result.get("restored") is True
+                and isinstance(entries, list)
+                and len(entries) > 0
+                and isinstance(display.get("_meta"), dict)
+                and meta.get("request_id") == "preview-display-1"
                 and meta.get("api_version") == "v1"
                 and meta.get("engine_version") == expected_engine_version
                 and isinstance(meta.get("duration_ms"), int)

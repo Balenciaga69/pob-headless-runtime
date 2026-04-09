@@ -1,4 +1,6 @@
 -- Import orchestrator that chooses the safest import path.
+local constants = require("api.import.constants")
+
 local M = {}
 M.__index = M
 
@@ -60,10 +62,10 @@ end
 function M:wait_for_importer_idle(importTab, expectedMode, errorMessage)
     -- Wait until the importer exits the importing state and reaches the expected mode.
     local status, err = self.runtime:run_until_settled({
-        maxFrames = 200,
-        maxSeconds = 15,
+        maxFrames = constants.wait_for_idle.maxFrames,
+        maxSeconds = constants.wait_for_idle.maxSeconds,
         ["until"] = function()
-            return importTab.charImportMode ~= "IMPORTING"
+            return importTab.charImportMode ~= constants.states.importing
         end,
     })
     if not status then
@@ -90,7 +92,7 @@ function M:execute_offline_import(params)
     self.pob:import_offline_payload(importTab, params)
     self.runtime:rebuild_imported_build(build)
     self.runtime:run_frames_if_idle(1)
-    return { build = build, importMode = "offline_payload" }
+    return { build = build, importMode = constants.import_modes.offline_payload }
 end
 
 function M:execute_remote_import()
@@ -110,7 +112,7 @@ function M:execute_remote_import()
         return nil,
             "Update failed: Account name must be set within PoB before it can be automatically updated"
     end
-    if self.pob:get_import_mode(importTab) ~= "GETACCOUNTNAME" then
+    if self.pob:get_import_mode(importTab) ~= constants.states.get_account_name then
         return nil, "Update failed: Unknown import error - is PoB importing set up correctly?"
     end
     if not common or not common.sha1 then
@@ -118,7 +120,7 @@ function M:execute_remote_import()
     end
     if common.sha1(accountName) ~= importTab.lastAccountHash then
         return nil,
-            "Update failed: Build comes from an account that is not configired in PoB - character must be imported in PoB before it can be automatically updated"
+            "Update failed: Build comes from an account that is not configured in PoB - character must be imported in PoB before it can be automatically updated"
     end
     if self.runtime:is_inside_callback() then
         return nil, "Update failed: remote importer update cannot run inside callbacks"
@@ -130,7 +132,7 @@ function M:execute_remote_import()
     end
     local _, listErr = self:wait_for_importer_idle(
         importTab,
-        "SELECTCHAR",
+        constants.states.select_character,
         "Update failed: Import not fully set up on this build"
     )
     if listErr then
@@ -149,7 +151,7 @@ function M:execute_remote_import()
     end
     local _, treeErr = self:wait_for_importer_idle(
         importTab,
-        "SELECTCHAR",
+        constants.states.select_character,
         "Update failed: Unable to download the passive tree"
     )
     if treeErr then
@@ -162,7 +164,7 @@ function M:execute_remote_import()
     end
     local _, itemErr = self:wait_for_importer_idle(
         importTab,
-        "SELECTCHAR",
+        constants.states.select_character,
         "Update failed: Unable to download items and skills"
     )
     if itemErr then
@@ -171,7 +173,7 @@ function M:execute_remote_import()
 
     self.runtime:rebuild_imported_build(build)
     self.runtime:run_frames_if_idle(1)
-    return { build = build, importMode = "remote_import" }
+    return { build = build, importMode = constants.import_modes.remote_import }
 end
 
 function M:update_imported_build(params)

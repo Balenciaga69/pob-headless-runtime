@@ -239,6 +239,63 @@ function M:simulate_mod(modLine, slot, fields)
     })
 end
 
+function M:restore_preview_item(build, slot, previousItemId, previewItem)
+    if previewItem then
+        self.pob:delete_item(build, previewItem, true)
+    end
+    self.pob:set_slot_item(slot, previousItemId or 0)
+    self.pob:refresh_item_state(build, true)
+    local _, err = self.runtime:rebuild_output(build)
+    if not err then
+        self.runtime:run_frames_if_idle(1)
+        return true
+    end
+    return nil, err
+end
+
+function M:preview_item_display_stats(itemText, requestedSlot)
+    local simulation, err = self:simulate_outputs(itemText, requestedSlot)
+    if not simulation then
+        return nil, err
+    end
+
+    local previousItemId = simulation.slot and simulation.slot.selItemId or 0
+    local previewItem = self.pob:add_item(simulation.build, simulation.item)
+    self.pob:set_slot_item(simulation.slot, previewItem and previewItem.id or nil)
+    self.pob:refresh_item_state(simulation.build, true)
+
+    local ok, displayStatsOrErr = pcall(function()
+        local _, outputErr = self.runtime:rebuild_output(simulation.build)
+        if outputErr then
+            error(outputErr)
+        end
+        self.runtime:run_frames_if_idle(1)
+        return {
+            _meta = self.stats:build_meta(simulation.build),
+            entries = self.stats.displayStats:build_entries(simulation.build),
+        }
+    end)
+
+    local restored, restoreErr =
+        self:restore_preview_item(simulation.build, simulation.slot, previousItemId, previewItem)
+    if not restored then
+        return nil, restoreErr
+    end
+    if not ok then
+        return nil, displayStatsOrErr
+    end
+
+    return {
+        kind = "item",
+        restored = true,
+        simulationMode = "snapshot_restore",
+        slot = simulation.slotSummary,
+        currentItem = simulation.equippedItemSummary,
+        candidateItem = simulation.itemSummary,
+        displayStats = displayStatsOrErr,
+    }
+end
+
 function M:equip_item(itemText, requestedSlot)
     local build, err =
         self.runtime:ensure_build_ready({ "itemsTab", "calcsTab" }, "items not initialized")
