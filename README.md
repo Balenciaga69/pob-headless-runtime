@@ -4,6 +4,17 @@
 
 This repository is not a standalone PoB fork. It is meant to live inside a compatible Path of Building repository layout.
 
+## Compatibility
+
+Supported and validated baseline:
+
+- Lua runtime: `LuaJIT` with FFI support
+- Path of Building host: Path of Building Community `2.63.0`
+
+The current smoke and runtime tests are validated against Path of Building Community `2.63.0`.
+
+If you use a different PoB fork or branch, editor support may still work, but runtime behavior and tests are not guaranteed.
+
 ## What You Need
 
 To work on this project locally you need:
@@ -36,7 +47,7 @@ See: [VERSIONING.md](./VERSIONING.md)
 The current compatible host repository used for local smoke and runtime testing is:
 
 - `https://github.com/PathOfBuildingCommunity/PathOfBuilding`
-- the upstream default branch used by the official community project
+- release `2.63.0`
 
 If you use a different PoB fork or branch, editor support may still work, but smoke and runtime tests can fail if the upstream object model differs.
 
