@@ -64,6 +64,14 @@ function M.equip_item(session, itemText, slot)
     return service:equip_item(itemText, slot)
 end
 
+function M.preview_item_display_stats(session, itemText, slot)
+    local service, err = requireItemsService(session)
+    if not service then
+        return nil, err
+    end
+    return service:preview_item_display_stats(itemText, slot)
+end
+
 function M.list_equipment(session)
     local service, err = requireItemsService(session)
     if not service then

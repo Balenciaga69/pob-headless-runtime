@@ -1,167 +1,86 @@
 # Versioning Policy
 
-This project follows a simplified Semantic Versioning strategy.
-
 ## Version Format
 
-```
+This project uses:
+
+```text
 MAJOR.MINOR.PATCH
 ```
 
-Example:
+Examples:
 
 - `0.1.0`
 - `0.1.1`
 - `0.2.0`
 
----
-
 ## Current Stage
 
-The project is currently in late `0.x` stage.
+The project is currently in late `0.x`.
 
 This means:
 
-- The project is usable as a dependency
-- The stable contract is maintained intentionally
+- the project is usable as a dependency
+- the stable contract is maintained intentionally
 - `1.0.0` has not been declared yet
-- Only the **stable API surface** is covered by compatibility expectations
-
----
+- only the stable API surface has compatibility expectations
 
 ## Stability Scope
 
-### Stable API (Guaranteed)
+Stable API:
 
-Defined in:
+- defined by `contracts/stable_api_v1.json`
+- accepted by the machine-facing worker
+- covered by compatibility expectations
 
-```
-contracts/stable_api_v1.json
-```
+Experimental API:
 
-Includes:
-
-- build load/save
-- summary / stats
-- detailed display stats
-- equipment operations
-- config read/write
-- runtime + health
-
-Rules:
-
-- Backward compatibility is expected
-- Breaking changes require MAJOR bump (after 1.0.0)
-
----
-
-### Experimental API (Not Guaranteed)
-
-- No compatibility guarantee
-- Can change or break at any time
-- Not part of versioning contract
-
----
+- not part of the versioned public contract
+- may change or break at any time
+- exists for compatibility helpers and local experimentation
 
 ## Version Bump Rules
 
-### PATCH (`0.1.0 → 0.1.1`)
+### PATCH
 
-- Bug fixes
-- Internal refactor
-- No change to stable API behavior
-- Documentation-only alignment for existing stable behavior
+Use a PATCH bump for:
 
----
+- bug fixes
+- internal refactors
+- documentation alignment for existing stable behavior
+- changes that do not alter stable API behavior
 
-### MINOR (`0.1.1 → 0.2.0`)
+### MINOR
 
-- Add new stable API capability
-- Behavioral changes that downstream should notice
-- Structural improvements affecting usage
-- Add or change stable response metadata that downstream may consume
+Use a MINOR bump for:
 
----
+- new stable API capability
+- downstream-visible stable behavior changes
+- stable response changes that downstream may consume
 
-### MAJOR (`1.0.0 → 2.0.0`)
+### MAJOR
 
-- Breaking changes to stable API
+Use a MAJOR bump for:
 
-Note:
+- breaking changes to the stable API after `1.0.0`
 
-- Before `1.0.0`, breaking changes may still occur
-- Prefer using MINOR bump for safety
+Before `1.0.0`, breaking changes may still occur, but prefer a MINOR bump when in doubt.
 
----
+## Release Requirements
 
-## Release Checklist
+Each release must:
 
-Before each release:
+1. update `CHANGELOG.md`
+2. run the validation flow from [CONTRIBUTING.md](./CONTRIBUTING.md)
+3. update `contracts/stable_api_v1.json` if stable API behavior changed
+4. update `README.md` if compatibility, entry points, or public summaries changed
+5. be tagged as `vX.Y.Z`
 
-```powershell
-.\scripts\fmt.ps1 -Check
-.\scripts\lint.ps1
-.\scripts\test.ps1
-python .\tests\run_transport_smoke.py
-```
+## Downstream Recommendation
 
-If experimental code is affected:
+During `0.x`:
 
-```powershell
-.\scripts\test.ps1 -Experimental
-```
+- use exact version pinning
+- avoid version ranges
 
----
-
-## Changelog Requirement
-
-Each release must include:
-
-```md
-## X.Y.Z - YYYY-MM-DD
-
-### Added
-
-### Changed
-
-### Fixed
-
-### Known limitations
-```
-
----
-
-## Git Tagging
-
-Each release must be tagged:
-
-```bash
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
-
----
-
-## Downstream Usage Recommendation
-
-During `0.x` stage:
-
-- Use exact version pinning:
-
-  ```
-  v0.1.0
-  ```
-
-- Avoid version ranges
-
----
-
-## Path to 1.0.0
-
-Upgrade to `1.0.0` when:
-
-- Stable API is finalized
-- Contract is trusted long-term
-- Downstream usage is verified
-- Transport coverage is reliable
-- Release docs and machine-readable contracts stay aligned by default
+Upgrade to `1.0.0` when the stable API, release process, and downstream usage expectations are all trusted long-term.

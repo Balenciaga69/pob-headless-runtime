@@ -2,21 +2,30 @@
 
 ## Goal
 
-The contributor experience for this repository should be:
+The contributor workflow for this repository should be:
 
 ```text
 clone host repo
 clone this repo into the host repo
 run bootstrap
 open VS Code
+run validation
 start contributing
 ```
 
-This document explains the exact workflow and the constraints behind it.
+## First-Time Setup
 
-## Development Baseline
+Finish the Quick Start in [README.md](./README.md) before using the development workflow here.
 
-This repository standardizes on the following toolchain:
+Prerequisites:
+
+- `git`
+- `python`
+- `luajit`
+
+## Tooling Rules
+
+This repository standardizes on:
 
 - Runtime: `LuaJIT`
 - Formatter: `StyLua`
@@ -24,168 +33,40 @@ This repository standardizes on the following toolchain:
 - Editor / language server: `Lua Language Server`
 - Test runners: project-owned Python wrappers plus Lua test helpers
 
-Why this baseline exists:
-
-- the runtime code expects LuaJIT behavior and FFI support
-- formatter, linter, and language server responsibilities are separated cleanly
-- repo-owned configuration avoids per-user editor drift
-- repo-local tools reduce Windows setup friction for first-time contributors
-
-## Required Repository Layout
-
-This repository expects a compatible Path of Building host repository as its parent directory.
-
-Expected layout:
-
-```text
-PathOfBuilding-Headless/
-├─ src/
-├─ runtime/
-└─ pob-headless-runtime/
-```
-
-This requirement is not optional for runtime tests. The code resolves `../src/Launch.lua` and `../runtime/lua` through the host repository.
-
-If you only clone `pob-headless-runtime` by itself, editor features can still work, but smoke tests and runtime entry points will not.
-
-## First-Time Setup
-
-### 1. Install prerequisites
-
-Make sure these commands are available:
-
-- `git`
-- `python`
-- `luajit`
-
-### 2. Run bootstrap
-
-From the repository root:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\bootstrap.ps1
-```
-
-What bootstrap does:
-
-- creates a repo-local `.tools/` directory
-- installs a repo-local LuaRocks environment
-- installs `Luacheck` into that repo-local environment
-- downloads a pinned `StyLua` binary into `.tools/`
-- installs `Lua Language Server` through `winget` when available
-- installs recommended VS Code extensions when possible
-- verifies tool versions at the end
-
-### 3. Open VS Code
-
-The repository includes:
-
-- `.vscode/settings.json`
-- `.vscode/extensions.json`
-- `.luarc.json`
-- `.stylua.toml`
-- `.luacheckrc`
-- `.editorconfig`
-
-These files are part of the contract. Do not replace them with undocumented local-only conventions.
-
-## Editor Rules
-
-Formatting:
+Rules:
 
 - `StyLua` is the only formatter for Lua code.
-- format-on-save is enabled for Lua files in VS Code.
-- LuaLS formatting is disabled on purpose.
-
-Linting:
-
 - `Luacheck` is the linter of record.
-- if `Luacheck` reports a real issue, fix the code or adjust the repo config intentionally
-- do not bypass lint failures with editor-only settings
+- LuaLS formatting stays disabled to avoid formatter conflicts.
+- Repo-owned config files under the root and `.vscode/` are part of the project contract.
 
-Language Server:
-
-- `Lua Language Server` is used for diagnostics, hover, jump-to-definition, and workspace indexing
-- the workspace config points at both this repository and the compatible parent PoB layout
-
-## Daily Commands
+## Validation Commands
 
 Format:
 
 ```powershell
 .\scripts\fmt.ps1
-```
-
-Check formatting without editing files:
-
-```powershell
 .\scripts\fmt.ps1 -Check
 ```
 
-Run lint:
+Lint:
 
 ```powershell
 .\scripts\lint.ps1
 ```
 
-Run the default test suite:
+Stable validation:
 
 ```powershell
 .\scripts\test.ps1
 python .\tests\run_transport_smoke.py
 ```
 
-Run the extended test suite:
+Extended validation when compatibility-only helpers are affected:
 
 ```powershell
 .\scripts\test.ps1 -Experimental
 ```
-
-The `-Experimental` suite covers compatibility-only helpers. Failures there matter for legacy consumers, but the maintained contract for ongoing work is the stable API surface.
-
-## API Structure
-
-`src/api` is organized by feature first.
-
-Newer feature layout:
-
-- `api.lua`: thin entry methods
-- `orchestrator.lua`: flow coordination and runtime guarantees
-- `pob.lua`: direct PoB object interaction
-- `helpers/`: pure helper modules
-
-Current features on the newer layout:
-
-- `build`
-- `config`
-- `import`
-- `items`
-- `skills`
-- `stats`
-- `tree`
-
-All API features now use the same internal pattern.
-Do not re-introduce `repo.lua`, `service.lua`, or `pob_adapter.lua` into `src/api/<feature>/`.
-
-## API Maintenance Policy
-
-This repository intentionally does not aim to be a full headless PoB editor.
-
-Maintained stable surface:
-
-- build load/save
-- stats reads
-- GUI-like display stats reads
-- direct item equip
-- equipment listing
-- config read/write
-- runtime health/status
-
-Experimental surface:
-
-- exists for legacy compatibility and local experimentation
-- is not guaranteed to track the latest PoB internals
-- should not be expanded unless a capability is intended to graduate into the stable product contract
 
 ## Pull Request Expectations
 
@@ -193,27 +74,31 @@ Before opening a pull request:
 
 1. Run formatting.
 2. Run lint.
-3. Run unit/smoke tests.
-4. Run transport smoke.
-5. Make sure your change still works inside a compatible PoB host layout.
+3. Run the stable validation flow.
+4. Run the experimental suite if your change touches experimental behavior.
+5. Verify the change inside a compatible PoB host layout.
 
-There is no active GitHub Actions workflow at the moment, so the local scripts are the source of truth for validation.
+There is no active GitHub Actions workflow at the moment. Local validation is the source of truth.
 
-## What Is Feasible and What Is Not
+## Architecture Rules
 
-### Feasible
+Architecture and module boundaries are defined in [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
-- repo-owned formatter, linter, LSP, and PowerShell scripts
-- novice-friendly setup for Windows contributors
-- a future lightweight CI once the host dependency is reduced
-- a predictable "fork and start working" path for contributors using AI tools
+Contributor rule:
 
-### Not Feasible Without Extra Context
+- follow the current `api.lua` / `orchestrator.lua` / `pob.lua` / `helpers/` feature pattern
+- keep direct PoB object access inside `pob.lua` adapters or shared runtime adapters
+- do not re-introduce `repo.lua`, `service.lua`, or `pob_adapter.lua` inside `src/api/<feature>/`
 
-- standalone runtime execution without a compatible PoB host repository
-- stable smoke tests against arbitrary upstream PoB branches
-- assuming global Windows package managers will install every Lua tool reliably without fallbacks
-- a useful GitHub Actions setup without first reducing the host repository dependency footprint
+## Stable API Change Checklist
+
+If you change stable API behavior, follow [VERSIONING.md](./VERSIONING.md) and update:
+
+1. `contracts/stable_api_v1.json`
+2. transport coverage
+3. release notes in `CHANGELOG.md`
+4. `README.md` if the public summary, compatibility note, or document map changed
+5. `VERSIONING.md` if the release classification or compatibility policy changed
 
 ## Troubleshooting
 
@@ -233,17 +118,18 @@ Your checkout layout is wrong. Move this repository so that it sits inside a com
 
 Run `.\scripts\bootstrap.ps1` again. The local tools live under `.tools/` and are intentionally not committed.
 
+### Persistent worker clients still show old Lua behavior
+
+Restart the app or worker process after Lua runtime changes.
+
 ## Notes for Maintainers
 
-If you change the compatible host repository or branch:
+If the validated host repository or release changes:
 
-1. update `README.md`
-2. update this file
-3. verify the full test suite again
+1. update [README.md](./README.md)
+2. rerun the full validation flow
 
-If you change the stable API surface:
+If architecture rules change:
 
-1. update `contracts/stable_api_v1.json`
-2. update `README.md`
-3. update `VERSIONING.md` if the change affects release classification
-4. update or add transport smoke coverage
+1. update [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+2. update this file only if the contributor workflow changes

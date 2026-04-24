@@ -23,6 +23,7 @@ SUITES: dict[str, tuple[str, ...]] = {
         "smoke_build_code.lua",
         "smoke_contract_regression.lua",
         "smoke_min_api.lua",
+        "smoke_preview_item_display_stats.lua",
     ),
     "experimental": (
         "smoke_config_compare_stats.lua",

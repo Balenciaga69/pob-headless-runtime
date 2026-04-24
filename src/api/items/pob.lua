@@ -23,16 +23,35 @@ function M:get_item_by_slot(build, slotName)
     return slot, equippedItem
 end
 
-function M:add_and_equip_item(build, item, slot)
-    -- Equipping an item mutates several PoB tabs in lockstep; keep that sequence behind one adapter call.
+function M:add_item(build, item)
     build.itemsTab:AddItem(item, true)
-    slot:SetSelItemId(item.id)
-    build.itemsTab:PopulateSlots()
-    build.itemsTab:AddUndoState()
+    return build.itemsTab.items[item.id]
+end
+
+function M:set_slot_item(slot, itemId)
+    slot:SetSelItemId(itemId or 0)
+end
+
+function M:delete_item(build, item, deferUndoState)
+    build.itemsTab:DeleteItem(item, deferUndoState)
+end
+
+function M:refresh_item_state(build, skipUndoState)
     build.buildFlag = true
+    build.itemsTab:PopulateSlots()
+    if not skipUndoState and build.itemsTab.AddUndoState then
+        build.itemsTab:AddUndoState()
+    end
     if build.configTab and build.configTab.BuildModList then
         build.configTab:BuildModList()
     end
+end
+
+function M:add_and_equip_item(build, item, slot)
+    -- Equipping an item mutates several PoB tabs in lockstep; keep that sequence behind one adapter call.
+    self:add_item(build, item)
+    self:set_slot_item(slot, item.id)
+    self:refresh_item_state(build, false)
     return build.itemsTab.items[item.id]
 end
 

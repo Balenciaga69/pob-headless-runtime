@@ -26,6 +26,10 @@ do
     expect(type(services.tree.simulate_node_delta) == "function", "expected tree service")
     expect(type(services.tree.pob.refresh_active_spec) == "function", "expected tree pob adapter")
     expect(type(services.items.compare_item_stats) == "function", "expected items service")
+    expect(
+        type(services.items.preview_item_display_stats) == "function",
+        "expected items preview display stats service"
+    )
     expect(type(services.items.list_items) == "function", "expected items list service")
     expect(type(services.items.pob.render_tooltip) == "function", "expected items pob adapter")
     expect(type(services.skills.list_skills) == "function", "expected skills service")

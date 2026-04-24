@@ -1,30 +1,9 @@
 local transportError = require("transport.error")
 local requestUtil = require("transport.json_stdio.request")
 local responseUtil = require("transport.json_stdio.response")
+local apiSurface = require("api.surface")
 
 local M = {}
-
-local DEFAULT_STABLE_METHODS = {
-    load_build_xml = true,
-    load_build_code = true,
-    load_build_file = true,
-    save_build_xml = true,
-    save_build_code = true,
-    save_build_file = true,
-    get_summary = true,
-    get_stats = true,
-    get_display_stats = true,
-    equip_item = true,
-    list_equipment = true,
-    list_items = true,
-    list_skills = true,
-    select_skill = true,
-    get_selected_skill = true,
-    set_config = true,
-    get_config = true,
-    get_runtime_status = true,
-    health = true,
-}
 
 -- Resolve the stable method surface from the API or fall back to the built-in list.
 local function getStableMethods(api)
@@ -39,10 +18,7 @@ local function getStableMethods(api)
     if next(stable) ~= nil then
         return stable
     end
-    for name, enabled in pairs(DEFAULT_STABLE_METHODS) do
-        stable[name] = enabled
-    end
-    return stable
+    return apiSurface.to_lookup(apiSurface.stable_names)
 end
 
 -- Validate the request envelope and reject unsupported methods before dispatch.
@@ -188,6 +164,22 @@ local function dispatchStableMethod(api, method, params)
     end
     if method == "get_display_stats" then
         local result, err = api.get_display_stats()
+        if not result then
+            return nil, transportError.fromUpstream(nil, err).error
+        end
+        return result
+    end
+    if method == "preview_item_display_stats" then
+        local itemText, paramErr =
+            requestUtil.requireNonEmptyString(params, "item_text", "item_text or itemText")
+        if not itemText then
+            itemText, paramErr =
+                requestUtil.requireNonEmptyString(params, "itemText", "item_text or itemText")
+        end
+        if not itemText then
+            return nil, paramErr
+        end
+        local result, err = api.preview_item_display_stats(itemText, params.slot)
         if not result then
             return nil, transportError.fromUpstream(nil, err).error
         end

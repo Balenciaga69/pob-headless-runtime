@@ -13,6 +13,10 @@ do
     expect(type(api.get_summary) == "function", "expected get_summary export")
     expect(type(api.get_stats) == "function", "expected get_stats export")
     expect(type(api.get_display_stats) == "function", "expected get_display_stats export")
+    expect(
+        type(api.preview_item_display_stats) == "function",
+        "expected preview_item_display_stats export"
+    )
     expect(type(api.equip_item) == "function", "expected equip_item export")
     expect(type(api.list_equipment) == "function", "expected list_equipment export")
     expect(type(api.list_items) == "function", "expected list_items export")
@@ -71,6 +75,10 @@ do
     expect(stable.load_build_xml == true, "expected load_build_xml to be stable")
     expect(stable.get_summary == true, "expected get_summary to be stable")
     expect(stable.get_display_stats == true, "expected get_display_stats to be stable")
+    expect(
+        stable.preview_item_display_stats == true,
+        "expected preview_item_display_stats to be stable"
+    )
     expect(stable.load_build_file == true, "expected load_build_file to be stable")
     expect(stable.save_build_xml == true, "expected save_build_xml to be stable")
     expect(stable.equip_item == true, "expected equip_item to be stable")

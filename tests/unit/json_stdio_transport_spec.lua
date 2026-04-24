@@ -296,6 +296,44 @@ end
 do
     local calls = {}
     local api = {
+        preview_item_display_stats = function(itemText, slot)
+            calls[#calls + 1] = { "preview_item_display_stats", itemText, slot }
+            return {
+                restored = true,
+                displayStats = {
+                    _meta = { mainSkill = "Kinetic Fusillade" },
+                    entries = {
+                        { type = "stat", label = "Average Damage", formatted = "48585.9" },
+                    },
+                },
+            }
+        end,
+    }
+
+    local response = transport.dispatchRequest(api, {
+        id = "preview-display-1",
+        method = "preview_item_display_stats",
+        params = {
+            item_text = "Rarity: Rare",
+            slot = "Ring 1",
+        },
+    })
+
+    expect(response.ok == true, "expected preview_item_display_stats response success")
+    expect(response.result.restored == true, "expected restored preview payload")
+    expect(
+        response.result.displayStats._meta.mainSkill == "Kinetic Fusillade",
+        "expected preview display meta payload"
+    )
+    expect(
+        calls[1][1] == "preview_item_display_stats",
+        "expected preview_item_display_stats dispatch"
+    )
+end
+
+do
+    local calls = {}
+    local api = {
         equip_item = function(itemText, slot)
             calls[#calls + 1] = { "equip_item", itemText, slot }
             return { slot = { resolved = slot }, item = { name = "Test" } }

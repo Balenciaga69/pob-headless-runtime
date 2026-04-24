@@ -97,6 +97,17 @@
         "build_name": "string"
       }
     },
+    "preview_item_display_stats": {
+      "params": {
+        "item_text": "string",
+        "itemText": "string",
+        "slot": "string",
+        "build_xml": "string",
+        "build_code": "string",
+        "build_name": "string"
+      },
+      "notes": ["item_text or itemText is required", "preview only; build state is restored before returning"]
+    },
     "equip_item": {
       "params": {
         "item_text": "string",
